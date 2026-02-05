@@ -1223,11 +1223,7 @@ x = b;
 
 ## Ссылки на код
 
-Все примеры кода доступны:
-
-**В проекте:** `lecture1code/src/main/java/lecture/one/`
-
-**На GitHub:**
+Все примеры кода доступны на а GitHub:
 - [Hello World](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples/tree/main/lecture1/src/main/java/lecture/one/hello)
 - [Class Loader](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples/tree/main/lecture1/src/main/java/lecture/one/classloader)
 - [JNI Native](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples/tree/main/lecture1/src/main/java/lecture/one/jninative)
