@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Современные технологии программирования</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Курс по современным технологиям программирования">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    :root {
+      --theme-color: #3F51B5;
+    }
+    .sidebar-nav > ul > li > a {
+      font-weight: bold;
+    }
+    .markdown-section code {
+      background-color: #f8f8f8;
+      border-radius: 3px;
+      padding: 2px 6px;
+    }
+    .markdown-section pre > code {
+      padding: 1em;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">Загрузка...</div>
+  <script>
+    window.$docsify = {
+      name: 'Современные технологии программирования',
+      repo: '',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      search: {
+        placeholder: 'Поиск',
+        noData: 'Ничего не найдено',
+        depth: 3
+      },
+      copyCode: {
+        buttonText: 'Копировать',
+        errorText: 'Ошибка',
+        successText: 'Скопировано'
+      }
+    }
+  </script>
+  <!-- Docsify v4 -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <!-- Search plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <!-- Code highlight -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-java.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-c.min.js"></script>
+  <!-- Copy code plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+</body>
+</html>
