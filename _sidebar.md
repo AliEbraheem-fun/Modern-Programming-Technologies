@@ -6,6 +6,7 @@
 
 - **Практические занятия**
   - [Практика 1: Основы Java](practice1.md)
+  - [Практика 2: Основные конструкции Java](practice2.md)
 
 - **Ресурсы**
   - [Примеры кода на GitHub](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples)
