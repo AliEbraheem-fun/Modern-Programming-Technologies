@@ -14,7 +14,8 @@
   - [Тест 2.2: Основные конструкции Java — Часть 2](quiz2-2.md)
 
 - **БРС**
-  - [ТРПО24 / ПИ24в](brs.md)
+  - [ТРПО24](brs-trpo24.md)
+  - [ПИ24в](brs-pi24v.md)
 
 - **Ресурсы**
   - [Примеры кода на GitHub](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples)
