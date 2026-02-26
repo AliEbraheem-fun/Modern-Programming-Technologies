@@ -29,5 +29,8 @@
   - [ТРПО24](brs-trpo24.md)
   - [ПИ24в](brs-pi24v.md)
 
+- **Презентации**
+  - [Темы презентаций: Ядро Linux](presentations.md)
+
 - **Ресурсы**
   - [Примеры кода на GitHub](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples)
