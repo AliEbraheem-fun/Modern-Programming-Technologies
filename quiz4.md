@@ -101,7 +101,7 @@
 
 <div class="quiz-container" id="quiz">
 
-<!-- ===== РАЗДЕЛ 1: ВЛОЖЕННЫЕ КЛАССЫ (Вопросы 1–12) ===== -->
+<!-- ===== РАЗДЕЛ 1: ВЛОЖЕННЫЕ КЛАССЫ (Вопросы 1–9) ===== -->
 
 <div class="quiz-question" data-correct="1">
 <h4>Вопрос 1. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
@@ -141,7 +141,7 @@ inner.show();
 <div class="quiz-question" data-correct="0">
 <h4>Вопрос 3. Какое ограничение имеет нестатический внутренний класс (inner class)?</h4>
 
-<div class="quiz-option" data-index="0">Не может объявлять статические поля и методы (кроме static final констант)</div>
+<div class="quiz-option" data-index="0">Не может существовать без экземпляра внешнего класса</div>
 <div class="quiz-option" data-index="1">Не имеет доступа к private полям внешнего класса</div>
 <div class="quiz-option" data-index="2">Может существовать без экземпляра внешнего класса</div>
 <div class="quiz-option" data-index="3">Не может реализовывать интерфейсы</div>
@@ -201,47 +201,7 @@ new Outer.Nested().printCount();
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 8. Какое утверждение верно о локальном классе (классе, объявленном внутри метода)?</h4>
-
-<div class="quiz-option" data-index="0">Он может обращаться к любым локальным переменным метода и изменять их</div>
-<div class="quiz-option" data-index="1">Он виден за пределами метода, если объявлен как public</div>
-<div class="quiz-option" data-index="2">Он может обращаться только к effectively final локальным переменным метода</div>
-<div class="quiz-option" data-index="3">Он не может реализовывать интерфейсы</div>
-<div class="quiz-feedback"></div>
-</div>
-
-<div class="quiz-question" data-correct="1">
-<h4>Вопрос 9. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
-
-```java
-interface Greeter {
-    String greet();
-}
-Greeter g = new Greeter() {
-    public String greet() { return "Привет!"; }
-};
-System.out.println(g.greet());
-```
-
-<div class="quiz-option" data-index="0">Ошибка компиляции: нельзя создать экземпляр интерфейса</div>
-<div class="quiz-option" data-index="1">Привет!</div>
-<div class="quiz-option" data-index="2">null</div>
-<div class="quiz-option" data-index="3">Ошибка выполнения</div>
-<div class="quiz-feedback"></div>
-</div>
-
-<div class="quiz-question" data-correct="3">
-<h4>Вопрос 10. Какое ключевое отличие анонимного класса от обычного внутреннего класса?</h4>
-
-<div class="quiz-option" data-index="0">Анонимный класс не может реализовать интерфейс</div>
-<div class="quiz-option" data-index="1">Анонимный класс может наследовать несколько классов одновременно</div>
-<div class="quiz-option" data-index="2">Анонимный класс может иметь собственное имя через ключевое слово as</div>
-<div class="quiz-option" data-index="3">Анонимный класс не имеет имени и не может иметь явно объявленный конструктор</div>
-<div class="quiz-feedback"></div>
-</div>
-
-<div class="quiz-question" data-correct="2">
-<h4>Вопрос 11. Что произойдёт при компиляции данного кода? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 8. Что произойдёт при компиляции данного кода? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 class Outer {
@@ -262,7 +222,7 @@ class Outer {
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 12. Какой из четырёх типов вложенных классов НЕ привязан к экземпляру внешнего класса?</h4>
+<h4>Вопрос 9. Какой из четырёх типов вложенных классов НЕ привязан к экземпляру внешнего класса?</h4>
 
 <div class="quiz-option" data-index="0">Статический вложенный класс (static nested class)</div>
 <div class="quiz-option" data-index="1">Нестатический внутренний класс (inner class)</div>
@@ -271,10 +231,10 @@ class Outer {
 <div class="quiz-feedback"></div>
 </div>
 
-<!-- ===== РАЗДЕЛ 2: ВЛОЖЕННЫЕ ИНТЕРФЕЙСЫ (Вопросы 13–16) ===== -->
+<!-- ===== РАЗДЕЛ 2: ВЛОЖЕННЫЕ ИНТЕРФЕЙСЫ (Вопросы 10–13) ===== -->
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 13. Какой модификатор доступа может иметь интерфейс, объявленный внутри класса?</h4>
+<h4>Вопрос 10. Какой модификатор доступа может иметь интерфейс, объявленный внутри класса?</h4>
 
 <div class="quiz-option" data-index="0">Только public</div>
 <div class="quiz-option" data-index="1">Любой: public, protected, package-private или private</div>
@@ -284,7 +244,7 @@ class Outer {
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 14. Какие неявные модификаторы получает интерфейс, объявленный внутри другого интерфейса?</h4>
+<h4>Вопрос 11. Какие неявные модификаторы получает интерфейс, объявленный внутри другого интерфейса?</h4>
 
 <div class="quiz-option" data-index="0">private abstract</div>
 <div class="quiz-option" data-index="1">protected abstract</div>
@@ -294,7 +254,7 @@ class Outer {
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 15. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 12. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 class Container {
@@ -316,7 +276,7 @@ new MyPrinter().print();
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 16. Может ли внешний класс сам реализовать свой вложенный интерфейс?</h4>
+<h4>Вопрос 13. Может ли внешний класс сам реализовать свой вложенный интерфейс?</h4>
 
 <div class="quiz-option" data-index="0">Да, внешний класс может реализовать свой собственный вложенный интерфейс</div>
 <div class="quiz-option" data-index="1">Нет, это вызовет циклическую зависимость</div>
@@ -325,10 +285,10 @@ new MyPrinter().print();
 <div class="quiz-feedback"></div>
 </div>
 
-<!-- ===== РАЗДЕЛ 3: ОБОБЩЕНИЯ / GENERICS (Вопросы 17–32) ===== -->
+<!-- ===== РАЗДЕЛ 3: ОБОБЩЕНИЯ / GENERICS (Вопросы 14–29) ===== -->
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 17. Какую основную проблему решают обобщения (generics) в Java?</h4>
+<h4>Вопрос 14. Какую основную проблему решают обобщения (generics) в Java?</h4>
 
 <div class="quiz-option" data-index="0">Ускоряют выполнение программы за счёт специализации кода</div>
 <div class="quiz-option" data-index="1">Позволяют использовать примитивные типы в коллекциях</div>
@@ -338,7 +298,7 @@ new MyPrinter().print();
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 18. Какие общепринятые имена параметров типов используются в Java?</h4>
+<h4>Вопрос 15. Какие общепринятые имена параметров типов используются в Java?</h4>
 
 <div class="quiz-option" data-index="0">A — Any, B — Base, C — Class, D — Data</div>
 <div class="quiz-option" data-index="1">T — Type, E — Element, K — Key, V — Value, N — Number, R — Result</div>
@@ -348,7 +308,7 @@ new MyPrinter().print();
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 19. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 16. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 class Box<T> {
@@ -368,7 +328,7 @@ System.out.println(box.get().length());
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 20. Что означает запись T extends Number в объявлении обобщённого класса?</h4>
+<h4>Вопрос 17. Что означает запись T extends Number в объявлении обобщённого класса?</h4>
 
 <div class="quiz-option" data-index="0">T может быть только Number или его подклассом (Integer, Double и т.д.)</div>
 <div class="quiz-option" data-index="1">T должен быть точно Number, без подклассов</div>
@@ -378,7 +338,7 @@ System.out.println(box.get().length());
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 21. Какая запись корректна для задания множественных границ типового параметра?</h4>
+<h4>Вопрос 18. Какая запись корректна для задания множественных границ типового параметра?</h4>
 
 <div class="quiz-option" data-index="0">T extends Comparable&lt;T&gt;, Cloneable</div>
 <div class="quiz-option" data-index="1">T implements Comparable&lt;T&gt; & Cloneable</div>
@@ -388,7 +348,7 @@ System.out.println(box.get().length());
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 22. Как объявить обобщённый метод, принимающий массив элементов типа T и возвращающий список?</h4>
+<h4>Вопрос 19. Как объявить обобщённый метод, принимающий массив элементов типа T и возвращающий список?</h4>
 
 <div class="quiz-option" data-index="0">List&lt;T&gt; toList(T[] arr) — параметр T определён на уровне класса</div>
 <div class="quiz-option" data-index="1">&lt;T&gt; List&lt;T&gt; toList(T[] arr) — параметр T объявлен перед возвращаемым типом</div>
@@ -398,7 +358,7 @@ System.out.println(box.get().length());
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 23. Что происходит с обобщёнными типами в процессе стирания типов (type erasure)?</h4>
+<h4>Вопрос 20. Что происходит с обобщёнными типами в процессе стирания типов (type erasure)?</h4>
 
 <div class="quiz-option" data-index="0">Параметры типов сохраняются в байткоде для проверки во время выполнения</div>
 <div class="quiz-option" data-index="1">Типы заменяются на void</div>
@@ -408,7 +368,7 @@ System.out.println(box.get().length());
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 24. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 21. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 List<String> strings = new ArrayList<>();
@@ -424,7 +384,7 @@ System.out.println(strings.getClass() == ints.getClass());
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 25. Какое из следующих действий НЕВОЗМОЖНО из-за стирания типов?</h4>
+<h4>Вопрос 22. Какое из следующих действий НЕВОЗМОЖНО из-за стирания типов?</h4>
 
 <div class="quiz-option" data-index="0">Объявить переменную типа T</div>
 <div class="quiz-option" data-index="1">Привести объект к типу T</div>
@@ -434,7 +394,7 @@ System.out.println(strings.getClass() == ints.getClass());
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 26. Какой класс корректно наследует обобщённый Box&lt;T&gt; с фиксированным типом String?</h4>
+<h4>Вопрос 23. Какой класс корректно наследует обобщённый Box&lt;T&gt; с фиксированным типом String?</h4>
 
 ```java
 class Box<T> { T value; }
@@ -448,7 +408,7 @@ class Box<T> { T value; }
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 27. Что означает подстановочный знак ? (wildcard) в обобщениях?</h4>
+<h4>Вопрос 24. Что означает подстановочный знак ? (wildcard) в обобщениях?</h4>
 
 <div class="quiz-option" data-index="0">Означает тип Object</div>
 <div class="quiz-option" data-index="1">Означает отсутствие типа</div>
@@ -458,7 +418,7 @@ class Box<T> { T value; }
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 28. Какой параметр метода позволит принять List&lt;Integer&gt;, List&lt;Double&gt; и List&lt;Number&gt;?</h4>
+<h4>Вопрос 25. Какой параметр метода позволит принять List&lt;Integer&gt;, List&lt;Double&gt; и List&lt;Number&gt;?</h4>
 
 <div class="quiz-option" data-index="0">List&lt;? extends Number&gt;</div>
 <div class="quiz-option" data-index="1">List&lt;? super Number&gt;</div>
@@ -468,7 +428,7 @@ class Box<T> { T value; }
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 29. Что означает правило PECS (Producer Extends, Consumer Super)?</h4>
+<h4>Вопрос 26. Что означает правило PECS (Producer Extends, Consumer Super)?</h4>
 
 <div class="quiz-option" data-index="0">Продюсер должен наследовать Consumer, а Consumer — расширять Producer</div>
 <div class="quiz-option" data-index="1">extends используется для записи, super — для чтения</div>
@@ -478,7 +438,7 @@ class Box<T> { T value; }
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 30. Почему в сигнатуре Collections.copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) используются именно такие wildcards?</h4>
+<h4>Вопрос 27. Почему в сигнатуре Collections.copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) используются именно такие wildcards?</h4>
 
 <div class="quiz-option" data-index="0">Это просто конвенция, можно использовать и наоборот</div>
 <div class="quiz-option" data-index="1">src — производитель данных (читаем элементы, extends), dest — потребитель данных (записываем элементы, super)</div>
@@ -488,7 +448,7 @@ class Box<T> { T value; }
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 31. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 28. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 class Pair<K, V> {
@@ -507,7 +467,7 @@ System.out.println(p.key + "=" + p.value);
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 32. Какое утверждение верно относительно обобщённых интерфейсов?</h4>
+<h4>Вопрос 29. Какое утверждение верно относительно обобщённых интерфейсов?</h4>
 
 ```java
 interface Transformer<T, R> {
@@ -522,10 +482,10 @@ interface Transformer<T, R> {
 <div class="quiz-feedback"></div>
 </div>
 
-<!-- ===== РАЗДЕЛ 4: ИСКЛЮЧЕНИЯ (Вопросы 33–48) ===== -->
+<!-- ===== РАЗДЕЛ 4: ИСКЛЮЧЕНИЯ (Вопросы 30–45) ===== -->
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 33. Какая иерархия исключений верна в Java?</h4>
+<h4>Вопрос 30. Какая иерархия исключений верна в Java?</h4>
 
 <div class="quiz-option" data-index="0">Object → Exception → Throwable → Error</div>
 <div class="quiz-option" data-index="1">Throwable → Error и Exception; Exception → RuntimeException</div>
@@ -535,7 +495,7 @@ interface Transformer<T, R> {
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 34. Какое исключение является проверяемым (checked)?</h4>
+<h4>Вопрос 31. Какое исключение является проверяемым (checked)?</h4>
 
 <div class="quiz-option" data-index="0">NullPointerException</div>
 <div class="quiz-option" data-index="1">ArrayIndexOutOfBoundsException</div>
@@ -545,7 +505,7 @@ interface Transformer<T, R> {
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 35. Чем checked-исключения отличаются от unchecked?</h4>
+<h4>Вопрос 32. Чем checked-исключения отличаются от unchecked?</h4>
 
 <div class="quiz-option" data-index="0">Checked-исключения должны быть обработаны (try-catch) или объявлены (throws) — иначе код не скомпилируется</div>
 <div class="quiz-option" data-index="1">Unchecked-исключения нельзя ловить в catch-блоке</div>
@@ -555,7 +515,7 @@ interface Transformer<T, R> {
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 36. К какой категории относится StackOverflowError?</h4>
+<h4>Вопрос 33. К какой категории относится StackOverflowError?</h4>
 
 <div class="quiz-option" data-index="0">Checked exception</div>
 <div class="quiz-option" data-index="1">Unchecked exception (RuntimeException)</div>
@@ -565,7 +525,7 @@ interface Transformer<T, R> {
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 37. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 34. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 try {
@@ -587,7 +547,7 @@ try {
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 38. Почему порядок catch-блоков имеет значение?</h4>
+<h4>Вопрос 35. Почему порядок catch-блоков имеет значение?</h4>
 
 <div class="quiz-option" data-index="0">Потому что выполняются все подходящие catch-блоки последовательно</div>
 <div class="quiz-option" data-index="1">Порядок не имеет значения — JVM сама выбирает наиболее подходящий</div>
@@ -597,7 +557,7 @@ try {
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 39. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 36. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 try {
@@ -619,7 +579,7 @@ System.out.print("4");
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 40. Что позволяет конструкция multi-catch, появившаяся в Java 7?</h4>
+<h4>Вопрос 37. Что позволяет конструкция multi-catch, появившаяся в Java 7?</h4>
 
 ```java
 catch (IOException | SQLException e) { ... }
@@ -633,7 +593,7 @@ catch (IOException | SQLException e) { ... }
 </div>
 
 <div class="quiz-question" data-correct="2">
-<h4>Вопрос 41. Какой метод класса Throwable возвращает текстовое описание исключения?</h4>
+<h4>Вопрос 38. Какой метод класса Throwable возвращает текстовое описание исключения?</h4>
 
 <div class="quiz-option" data-index="0">toString()</div>
 <div class="quiz-option" data-index="1">printStackTrace()</div>
@@ -643,7 +603,7 @@ catch (IOException | SQLException e) { ... }
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 42. В чём разница между ключевыми словами throw и throws?</h4>
+<h4>Вопрос 39. В чём разница между ключевыми словами throw и throws?</h4>
 
 <div class="quiz-option" data-index="0">throw объявляет исключения метода, throws бросает исключение</div>
 <div class="quiz-option" data-index="1">throw бросает конкретное исключение, throws объявляет в сигнатуре метода, какие checked-исключения он может выбросить</div>
@@ -653,7 +613,7 @@ catch (IOException | SQLException e) { ... }
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 43. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 40. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 try {
@@ -671,7 +631,7 @@ try {
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 44. Как правильно создать собственное checked-исключение?</h4>
+<h4>Вопрос 41. Как правильно создать собственное checked-исключение?</h4>
 
 <div class="quiz-option" data-index="0">class MyException extends RuntimeException {}</div>
 <div class="quiz-option" data-index="1">class MyException extends Error {}</div>
@@ -681,7 +641,7 @@ try {
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 45. Что такое try-with-resources и какой интерфейс должен реализовать ресурс?</h4>
+<h4>Вопрос 42. Что такое try-with-resources и какой интерфейс должен реализовать ресурс?</h4>
 
 <div class="quiz-option" data-index="0">Конструкция для автоматического открытия ресурсов; интерфейс Openable</div>
 <div class="quiz-option" data-index="1">Конструкция для автоматического закрытия ресурсов; интерфейс AutoCloseable</div>
@@ -691,7 +651,7 @@ try {
 </div>
 
 <div class="quiz-question" data-correct="0">
-<h4>Вопрос 46. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
+<h4>Вопрос 43. Что выведет следующий код? <span class="jshell-hint">Попробуй в jshell!</span></h4>
 
 ```java
 class MyRes implements AutoCloseable {
@@ -710,7 +670,7 @@ try (MyRes r = new MyRes()) {
 </div>
 
 <div class="quiz-question" data-correct="3">
-<h4>Вопрос 47. Что такое цепочка исключений (exception chaining)?</h4>
+<h4>Вопрос 44. Что такое цепочка исключений (exception chaining)?</h4>
 
 <div class="quiz-option" data-index="0">Перехват нескольких исключений подряд в отдельных try-catch блоках</div>
 <div class="quiz-option" data-index="1">Вызов нескольких throw подряд в одном методе</div>
@@ -720,7 +680,7 @@ try (MyRes r = new MyRes()) {
 </div>
 
 <div class="quiz-question" data-correct="1">
-<h4>Вопрос 48. Какая практика обработки исключений считается ПЛОХОЙ?</h4>
+<h4>Вопрос 45. Какая практика обработки исключений считается ПЛОХОЙ?</h4>
 
 ```java
 // Вариант A
@@ -754,52 +714,49 @@ catch (SpecificException e) { log.error("Ошибка", e); throw e; }
   var answers = {
     'Вопрос 1': 'Outer.this.x обращается к полю внешнего класса (10), а this.x — к полю внутреннего класса (20). Синтаксис Outer.this позволяет различать одноимённые члены.',
     'Вопрос 2': 'Нестатический внутренний класс привязан к экземпляру внешнего класса, поэтому сначала создаётся Outer, а затем через него — Inner: outer.new Inner().',
-    'Вопрос 3': 'Нестатический внутренний класс хранит ссылку на экземпляр внешнего класса, поэтому не может содержать статические члены (кроме static final констант компиляции).',
+    'Вопрос 3': 'Нестатический внутренний класс хранит неявную ссылку на экземпляр внешнего класса и не может существовать без него. Для создания объекта Inner нужен объект Outer: outer.new Inner().',
     'Вопрос 4': 'Статический вложенный класс не привязан к экземпляру внешнего класса. Он создаётся через имя внешнего класса: new Outer.StaticNested().',
     'Вопрос 5': 'Статический вложенный класс не имеет ссылки на экземпляр внешнего класса, поэтому может обращаться только к статическим членам Outer, включая private static.',
     'Вопрос 6': 'Статический вложенный класс имеет доступ к private static полям внешнего класса. Поэтому Nested видит count = 42 и выводит его.',
     'Вопрос 7': 'Builder создаёт экземпляр внешнего класса, а не наоборот. Он не нуждается в готовом экземпляре Outer, поэтому логично делать его статическим вложенным классом.',
-    'Вопрос 8': 'Локальный класс может обращаться к локальным переменным метода, только если они effectively final (не изменяются после инициализации).',
-    'Вопрос 9': 'Анонимный класс реализует интерфейс Greeter прямо в месте создания. Синтаксис new Interface() {} создаёт объект анонимного класса, реализующего интерфейс.',
-    'Вопрос 10': 'Анонимный класс не имеет имени, определяется в месте создания и не может объявить собственный конструктор, поскольку у него нет имени для конструктора.',
-    'Вопрос 11': 'Статический вложенный класс Nested не имеет ссылки на экземпляр Outer, поэтому обращение к нестатическому полю value невозможно — ошибка компиляции.',
-    'Вопрос 12': 'Статический вложенный класс — единственный тип вложенного класса, который не привязан к экземпляру внешнего класса. Inner, local и anonymous классы требуют экземпляр.',
-    'Вопрос 13': 'Интерфейс, объявленный внутри класса, может иметь любой модификатор доступа: public, protected, package-private или private.',
-    'Вопрос 14': 'Интерфейс, объявленный внутри другого интерфейса, неявно является public static. Это логично, так как все члены интерфейса по умолчанию public.',
-    'Вопрос 15': 'Вложенный интерфейс Container.Printable неявно является static и может быть реализован любым классом через implements Container.Printable.',
-    'Вопрос 16': 'Да, класс может реализовать собственный вложенный интерфейс. Это не вызывает циклической зависимости и является допустимым паттерном.',
-    'Вопрос 17': 'Generics обеспечивают типобезопасность на этапе компиляции: ошибки типов обнаруживаются до запуска, и не нужно явно приводить типы при извлечении из коллекций.',
-    'Вопрос 18': 'Общепринятые имена: T (Type), E (Element), K (Key), V (Value), N (Number), R (Result). Это конвенция, облегчающая чтение обобщённого кода.',
-    'Вопрос 19': 'Box хранит строку "Hello". Метод get() возвращает String, у которого вызывается length(). "Hello".length() = 5.',
-    'Вопрос 20': 'Конструкция T extends Number задаёт верхнюю границу: T может быть Number или любым его подклассом (Integer, Double, BigDecimal и т.д.).',
-    'Вопрос 21': 'Множественные границы задаются через &: T extends Comparable<T> & Cloneable. Запятая разделяет параметры типов, а не границы одного параметра.',
-    'Вопрос 22': 'Обобщённый метод объявляет параметр типа <T> перед возвращаемым типом: <T> List<T> toList(T[] arr). Это позволяет методу работать с любым типом.',
-    'Вопрос 23': 'Type erasure: компилятор проверяет типы, затем стирает параметры, заменяя их на Object (или границу). В runtime информация о типовых параметрах отсутствует.',
-    'Вопрос 24': 'Из-за стирания типов List<String> и List<Integer> в runtime имеют один и тот же класс ArrayList. Поэтому getClass() возвращает одинаковый объект.',
-    'Вопрос 25': 'Из-за стирания типов T не существует в runtime, поэтому нельзя создать new T() или new T[]. Компилятор не знает конкретный тип для создания экземпляра.',
-    'Вопрос 26': 'StringBox extends Box<String> фиксирует тип параметра. Запись StringBox<String> ошибочна: String стало бы именем нового типового параметра, затеняющего класс String.',
-    'Вопрос 27': 'Wildcard ? означает «неизвестный тип». Используется когда конкретный тип не важен, например List<?> принимает список с элементами любого типа.',
-    'Вопрос 28': 'List<? extends Number> принимает List любого подтипа Number: List<Integer>, List<Double>, List<Number>. List<Number> не примет List<Integer> из-за инвариантности.',
-    'Вопрос 29': 'PECS: если коллекция — источник данных (Producer), используем extends для чтения; если коллекция — приёмник данных (Consumer), используем super для записи.',
-    'Вопрос 30': 'В Collections.copy() из src читаем элементы (producer → extends), в dest записываем элементы (consumer → super). Это классическое применение PECS.',
-    'Вопрос 31': 'Pair создаётся с ключом "age" (String) и значением 25 (Integer). Конкатенация через + выводит age=25.',
-    'Вопрос 32': 'Обобщённый интерфейс можно реализовать с конкретными типами. Класс не обязан быть обобщённым — он может зафиксировать типы при implements.',
-    'Вопрос 33': 'Throwable — корень иерархии. От него наследуются Error (серьёзные ошибки JVM) и Exception (обрабатываемые исключения). RuntimeException — подкласс Exception.',
-    'Вопрос 34': 'IOException — checked-исключение (наследует Exception, но не RuntimeException). NullPointerException и ArrayIndexOutOfBoundsException — unchecked (RuntimeException).',
-    'Вопрос 35': 'Checked-исключения обязательно должны быть обработаны в try-catch или объявлены в throws. Unchecked (наследники RuntimeException) не требуют этого.',
-    'Вопрос 36': 'StackOverflowError наследует Error → Throwable. Это не исключение, а ошибка JVM (переполнение стека вызовов), которую обычно нет смысла перехватывать.',
-    'Вопрос 37': 'Выводится "A", затем деление на ноль вызывает ArithmeticException (B пропускается), catch печатает "C", и finally всегда выполняется — печатает "D". Итого: ACD.',
-    'Вопрос 38': 'Catch-блоки проверяются по порядку. Если суперкласс стоит раньше подкласса, подкласс никогда не будет достигнут — компилятор выдаст ошибку "unreachable catch block".',
-    'Вопрос 39': 'Выводится "1", выбрасывается RuntimeException, catch ловит его и печатает "2", finally печатает "3", затем выполнение продолжается — печатает "4". Итого: 1234.',
-    'Вопрос 40': 'Multi-catch позволяет одним catch-блоком обработать несколько несвязанных типов исключений. Типы разделяются символом |, и они не должны быть наследниками друг друга.',
-    'Вопрос 41': 'getMessage() возвращает строку-сообщение, переданную в конструктор исключения. printStackTrace() печатает стек вызовов, toString() — класс + сообщение.',
-    'Вопрос 42': 'throw new Exception("msg") бросает конкретный объект исключения. throws Exception в сигнатуре метода предупреждает вызывающий код о возможном checked-исключении.',
-    'Вопрос 43': 'getMessage() возвращает строку, переданную в конструктор: "Тест". Метод toString() вернул бы "java.lang.Exception: Тест", а getMessage() — только само сообщение.',
-    'Вопрос 44': 'Для создания checked-исключения наследуем от Exception. RuntimeException — для unchecked, Error — для ошибок JVM. Exception не интерфейс, а класс.',
-    'Вопрос 45': 'Try-with-resources (Java 7+) автоматически закрывает ресурсы после блока try. Ресурс должен реализовать интерфейс AutoCloseable с методом close().',
-    'Вопрос 46': 'Сначала выполняется тело try — "used ", затем ресурс автоматически закрывается — вызывается close(), который печатает "closed ". Итого: used closed.',
-    'Вопрос 47': 'Exception chaining — оборачивание исходного исключения (cause) в новое: throw new HighLevel("msg", originalException). Это сохраняет информацию о первопричине.',
-    'Вопрос 48': 'Вариант A — двойная ошибка: перехват слишком широкого Exception маскирует конкретные проблемы, а пустой catch «проглатывает» исключение без логирования и обработки.'
+    'Вопрос 8': 'Статический вложенный класс Nested не имеет ссылки на экземпляр Outer, поэтому обращение к нестатическому полю value невозможно — ошибка компиляции.',
+    'Вопрос 9': 'Статический вложенный класс — единственный тип вложенного класса, который не привязан к экземпляру внешнего класса. Inner, local и anonymous классы требуют экземпляр.',
+    'Вопрос 10': 'Интерфейс, объявленный внутри класса, может иметь любой модификатор доступа: public, protected, package-private или private.',
+    'Вопрос 11': 'Интерфейс, объявленный внутри другого интерфейса, неявно является public static. Это логично, так как все члены интерфейса по умолчанию public.',
+    'Вопрос 12': 'Вложенный интерфейс Container.Printable неявно является static и может быть реализован любым классом через implements Container.Printable.',
+    'Вопрос 13': 'Да, класс может реализовать собственный вложенный интерфейс. Это не вызывает циклической зависимости и является допустимым паттерном.',
+    'Вопрос 14': 'Generics обеспечивают типобезопасность на этапе компиляции: ошибки типов обнаруживаются до запуска, и не нужно явно приводить типы при извлечении из коллекций.',
+    'Вопрос 15': 'Общепринятые имена: T (Type), E (Element), K (Key), V (Value), N (Number), R (Result). Это конвенция, облегчающая чтение обобщённого кода.',
+    'Вопрос 16': 'Box хранит строку "Hello". Метод get() возвращает String, у которого вызывается length(). "Hello".length() = 5.',
+    'Вопрос 17': 'Конструкция T extends Number задаёт верхнюю границу: T может быть Number или любым его подклассом (Integer, Double, BigDecimal и т.д.).',
+    'Вопрос 18': 'Множественные границы задаются через &: T extends Comparable<T> & Cloneable. Запятая разделяет параметры типов, а не границы одного параметра.',
+    'Вопрос 19': 'Обобщённый метод объявляет параметр типа <T> перед возвращаемым типом: <T> List<T> toList(T[] arr). Это позволяет методу работать с любым типом.',
+    'Вопрос 20': 'Type erasure: компилятор проверяет типы, затем стирает параметры, заменяя их на Object (или границу). В runtime информация о типовых параметрах отсутствует.',
+    'Вопрос 21': 'Из-за стирания типов List<String> и List<Integer> в runtime имеют один и тот же класс ArrayList. Поэтому getClass() возвращает одинаковый объект.',
+    'Вопрос 22': 'Из-за стирания типов T не существует в runtime, поэтому нельзя создать new T() или new T[]. Компилятор не знает конкретный тип для создания экземпляра.',
+    'Вопрос 23': 'StringBox extends Box<String> фиксирует тип параметра. Запись StringBox<String> ошибочна: String стало бы именем нового типового параметра, затеняющего класс String.',
+    'Вопрос 24': 'Wildcard ? означает «неизвестный тип». Используется когда конкретный тип не важен, например List<?> принимает список с элементами любого типа.',
+    'Вопрос 25': 'List<? extends Number> принимает List любого подтипа Number: List<Integer>, List<Double>, List<Number>. List<Number> не примет List<Integer> из-за инвариантности.',
+    'Вопрос 26': 'PECS: если коллекция — источник данных (Producer), используем extends для чтения; если коллекция — приёмник данных (Consumer), используем super для записи.',
+    'Вопрос 27': 'В Collections.copy() из src читаем элементы (producer → extends), в dest записываем элементы (consumer → super). Это классическое применение PECS.',
+    'Вопрос 28': 'Pair создаётся с ключом "age" (String) и значением 25 (Integer). Конкатенация через + выводит age=25.',
+    'Вопрос 29': 'Обобщённый интерфейс можно реализовать с конкретными типами. Класс не обязан быть обобщённым — он может зафиксировать типы при implements.',
+    'Вопрос 30': 'Throwable — корень иерархии. От него наследуются Error (серьёзные ошибки JVM) и Exception (обрабатываемые исключения). RuntimeException — подкласс Exception.',
+    'Вопрос 31': 'IOException — checked-исключение (наследует Exception, но не RuntimeException). NullPointerException и ArrayIndexOutOfBoundsException — unchecked (RuntimeException).',
+    'Вопрос 32': 'Checked-исключения обязательно должны быть обработаны в try-catch или объявлены в throws. Unchecked (наследники RuntimeException) не требуют этого.',
+    'Вопрос 33': 'StackOverflowError наследует Error → Throwable. Это не исключение, а ошибка JVM (переполнение стека вызовов), которую обычно нет смысла перехватывать.',
+    'Вопрос 34': 'Выводится "A", затем деление на ноль вызывает ArithmeticException (B пропускается), catch печатает "C", и finally всегда выполняется — печатает "D". Итого: ACD.',
+    'Вопрос 35': 'Catch-блоки проверяются по порядку. Если суперкласс стоит раньше подкласса, подкласс никогда не будет достигнут — компилятор выдаст ошибку "unreachable catch block".',
+    'Вопрос 36': 'Выводится "1", выбрасывается RuntimeException, catch ловит его и печатает "2", finally печатает "3", затем выполнение продолжается — печатает "4". Итого: 1234.',
+    'Вопрос 37': 'Multi-catch позволяет одним catch-блоком обработать несколько несвязанных типов исключений. Типы разделяются символом |, и они не должны быть наследниками друг друга.',
+    'Вопрос 38': 'getMessage() возвращает строку-сообщение, переданную в конструктор исключения. printStackTrace() печатает стек вызовов, toString() — класс + сообщение.',
+    'Вопрос 39': 'throw new Exception("msg") бросает конкретный объект исключения. throws Exception в сигнатуре метода предупреждает вызывающий код о возможном checked-исключении.',
+    'Вопрос 40': 'getMessage() возвращает строку, переданную в конструктор: "Тест". Метод toString() вернул бы "java.lang.Exception: Тест", а getMessage() — только само сообщение.',
+    'Вопрос 41': 'Для создания checked-исключения наследуем от Exception. RuntimeException — для unchecked, Error — для ошибок JVM. Exception не интерфейс, а класс.',
+    'Вопрос 42': 'Try-with-resources (Java 7+) автоматически закрывает ресурсы после блока try. Ресурс должен реализовать интерфейс AutoCloseable с методом close().',
+    'Вопрос 43': 'Сначала выполняется тело try — "used ", затем ресурс автоматически закрывается — вызывается close(), который печатает "closed ". Итого: used closed.',
+    'Вопрос 44': 'Exception chaining — оборачивание исходного исключения (cause) в новое: throw new HighLevel("msg", originalException). Это сохраняет информацию о первопричине.',
+    'Вопрос 45': 'Вариант A — двойная ошибка: перехват слишком широкого Exception маскирует конкретные проблемы, а пустой catch «проглатывает» исключение без логирования и обработки.'
   };
 
   document.querySelectorAll('.quiz-option').forEach(function(option) {
