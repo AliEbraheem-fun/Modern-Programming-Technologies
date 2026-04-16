@@ -30,7 +30,8 @@
   - [ПИ24в](brs-pi24v.md)
 
 - **Презентации**
-  - [Темы презентаций: Ядро Linux](presentations.md)
+  - [Темы презентаций: Ядро Linux](presentations-linux-kernel.md)
+  - [Темы презентаций: Паттерны проектирования](presentations-design-patterns.md)
 
 - **Ресурсы**
   - [Примеры кода на GitHub](https://github.com/AliEbraheem-fun/Modern-Programming-Technologies-Code-Examples)

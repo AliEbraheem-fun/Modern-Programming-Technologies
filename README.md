@@ -41,6 +41,11 @@
 - [ТРПО24](brs-trpo24.md)
 - [ПИ24в](brs-pi24v.md)
 
+### Презентации
+
+- [Темы презентаций: Ядро Linux](presentations-linux-kernel.md)
+- [Темы презентаций: Паттерны проектирования](presentations-design-patterns.md)
+
 ## QR-код для быстрого доступа
 
 <img src="qr.svg" alt="QR-код курса" width="512">
