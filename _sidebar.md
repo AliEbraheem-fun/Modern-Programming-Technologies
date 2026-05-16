@@ -7,6 +7,7 @@
   - [Лекция 4: Вложенные классы, Обобщения и Исключения](lecture4.md)
   - [Лекция 5: Коллекции, I/O и Многопоточность](lecture5.md)
   - [Лекция 6: Системы сборки, JDBC и Hibernate](lecture6.md)
+  - [Лекция 7: Spring Framework и Spring Boot](lecture7.md)
 
 - **Практические занятия**
   - [Практика 1: Основы Java](practice1.md)
@@ -15,6 +16,7 @@
   - [Практика 4: Вложенные классы, Обобщения и Исключения](practice4.md)
   - [Практика 5: Коллекции, I/O и Многопоточность](practice5.md)
   - [Практика 6: Системы сборки, JDBC и Hibernate](practice6.md)
+  - [Практика 7: Spring Framework и Spring Boot](practice7.md)
 
 - **Тесты**
   - [Тест 1: Введение в Java](quiz1.md)
@@ -24,6 +26,7 @@
   - [Тест 4: Вложенные классы, Обобщения и Исключения](quiz4.md)
   - [Тест 5: Коллекции, I/O и Многопоточность](quiz5.md)
   - [Тест 6: Системы сборки, JDBC и Hibernate](quiz6.md)
+  - [Тест 7: Spring Framework и Spring Boot](quiz7.md)
 
 - **БРС**
   - [ТРПО24](brs-trpo24.md)
