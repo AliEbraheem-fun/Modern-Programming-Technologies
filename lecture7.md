@@ -1329,31 +1329,3 @@ public void importStudents() throws IOException { /* ... */ }
 | Spring Security | `SecurityFilterChain`, `@PreAuthorize`, `UserDetailsService`, `BCryptPasswordEncoder` |
 | JWT | `generateToken`, `validateToken`, фильтр в цепочке |
 | AOP | Aspect, JoinPoint, Pointcut, Advice; `@Transactional`, `@Cacheable` |
-
-### Чек-лист: чем Spring Boot отличается от «голого» Spring
-
-- ✅ Не нужны XML-конфигурации (хотя поддерживаются).
-- ✅ Автоконфигурация по classpath.
-- ✅ Встроенный веб-сервер — приложение упаковывается в один JAR.
-- ✅ Starter-зависимости с согласованными версиями.
-- ✅ Готовая инфраструктура: Actuator, конфигурация через `application.properties`, профили.
-
-### Production-ready чек-лист REST-эндпоинта
-
-Перед тем как считать эндпоинт готовым к продакшену, проверьте:
-
-- [ ] Принимает **Request DTO**, не entity.
-- [ ] Возвращает **Response DTO**, не entity.
-- [ ] На параметре стоит `@Valid`, DTO размечен Bean Validation-аннотациями.
-- [ ] Сервис помечен `@Transactional` (где есть запись) или `@Transactional(readOnly = true)`.
-- [ ] Бизнес-исключения обрабатываются глобально через `@RestControllerAdvice`.
-- [ ] Возвращается корректный HTTP-статус (`201 Created`, `204 No Content`, `404 Not Found`).
-- [ ] Access-контроль через `@PreAuthorize` или конфигурацию `SecurityFilterChain`.
-
-### Что почитать дальше
-
-- [Spring Initializr](https://start.spring.io) — быстрый старт.
-- Документация Spring Framework / Spring Boot / Spring Security / Spring Data JPA.
-- [Mastering `@Transactional` — Sachin Verma](https://medium.com/@sachinverma_78701/mastering-transactional-in-spring-boot-best-practices-and-common-pitfalls-9753c466a13f).
-- [Spring Boot DTO Validation — Paysafe](https://medium.com/paysafe-bulgaria/springboot-dto-validation-good-practices-and-breakdown-fee69277b3b0).
-- Учебный проект, рассмотренный на этой лекции, — он наглядно показывает взаимодействие всех слоёв.
