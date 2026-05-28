@@ -411,8 +411,10 @@
     if (PREVIEW) {
       TOTAL_QUESTIONS = pool.length;
     }
-    // Pick TOTAL_QUESTIONS from pool, shuffle options inside each
-    const picked = shuffle(pool).slice(0, TOTAL_QUESTIONS);
+    // Students: shuffle pool, take TOTAL_QUESTIONS.
+    // Preview: keep pool order (stable hash-sorted) so teacher can track progress
+    // across rebuilds — dropping a question only swaps its slot.
+    const picked = PREVIEW ? pool.slice() : shuffle(pool).slice(0, TOTAL_QUESTIONS);
     questions = picked.map(q => {
       const order = shuffle(q.options.map((_, i) => i));
       const shuffledOptions = order.map(i => q.options[i]);

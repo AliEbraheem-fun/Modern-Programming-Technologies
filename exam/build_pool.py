@@ -4,9 +4,9 @@ Filters out questions whose body mentions specific Java versions or release date
 Run from project root: python exam/build_pool.py
 """
 from __future__ import annotations
+import hashlib
 import io
 import json
-import random
 import re
 import sys
 from pathlib import Path
@@ -17,9 +17,6 @@ OUT = Path(__file__).resolve().parent / "pool.json"
 # Cap final pool at this many questions.
 # Teachers preview all of them via ?preview; students get a random 60-question subset.
 TARGET_POOL_SIZE = 180
-# Fixed seed so the same 180 are selected every rebuild — preview matches what
-# students see (their 60 are picked at runtime from these 180).
-SAMPLE_SEED = 42
 
 QUIZ_FILES = [
     "quiz1.md",
@@ -123,6 +120,12 @@ EXCLUDE_PATTERNS = [
     re.compile(r"\bкакая\s+структура\s+данных\s+лежит\s+в\s+основе\b", re.IGNORECASE),
 ]
 
+# Exact question texts to drop manually (after teacher review during preview).
+# Add a line as you find questions to remove; matched case-insensitively.
+MANUAL_DROP_QUESTIONS = {
+    'Что делает BinaryOperator<Integer>?',
+}
+
 # Patterns that should ONLY match if found in the question text (not in options/code).
 # Reason: terms like "Metaspace" or "Bootstrap ClassLoader" often appear as distractors
 # in options of conceptual questions ("где хранятся объекты в JVM?") — those should be kept.
@@ -223,6 +226,9 @@ def parse_quiz(path: Path) -> list[dict]:
 
 
 def is_excluded(q: dict) -> tuple[bool, str]:
+    # Manual drop list — exact match against question text, case-insensitive.
+    if q['question'].strip().lower() in {s.strip().lower() for s in MANUAL_DROP_QUESTIONS}:
+        return True, "in MANUAL_DROP_QUESTIONS"
     haystack = q['question'] + '\n' + q['code'] + '\n' + '\n'.join(q['options'])
     for pat in EXCLUDE_PATTERNS:
         m = pat.search(haystack)
@@ -259,14 +265,21 @@ def main() -> int:
                 pool.append(q)
                 per_source_kept[name] = per_source_kept.get(name, 0) + 1
 
-    # Cap at TARGET_POOL_SIZE via deterministic shuffled sample.
+    # Cap at TARGET_POOL_SIZE via STABLE hash-based selection.
+    # Each question has a permanent SHA-256 key derived from its text. We sort
+    # by that key and take the smallest TARGET_POOL_SIZE. Result:
+    #   - Dropping a question NOT in the top 180 → top 180 stays identical.
+    #   - Dropping a question IN the top 180 → the next-smallest-hash question
+    #     fills the slot, everything else stays put.
+    # We then sort the final list by the same hash so the pool order is also
+    # stable across rebuilds (helpful for ?preview review).
+    def q_hash(item: dict) -> str:
+        return hashlib.sha256(item['question'].encode('utf-8')).hexdigest()
+
     original_count = len(pool)
+    pool.sort(key=q_hash)
     if len(pool) > TARGET_POOL_SIZE:
-        rng = random.Random(SAMPLE_SEED)
-        idxs = list(range(len(pool)))
-        rng.shuffle(idxs)
-        kept_idxs = sorted(idxs[:TARGET_POOL_SIZE])  # sort to keep source order
-        pool = [pool[i] for i in kept_idxs]
+        pool = pool[:TARGET_POOL_SIZE]
 
     # Strip the 'source' field before writing
     out_pool = [
@@ -281,7 +294,7 @@ def main() -> int:
     OUT.write_text(json.dumps(out_pool, ensure_ascii=False, indent=2), encoding='utf-8')
 
     print(f"Wrote {len(out_pool)} questions to {OUT}"
-          f" (capped from {original_count}, seed={SAMPLE_SEED})")
+          f" (capped from {original_count}, stable SHA-256 hash sort)")
     print("\nPer-source counts:")
     for name in QUIZ_FILES:
         kept = per_source_kept.get(name, 0)
