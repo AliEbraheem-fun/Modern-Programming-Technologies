@@ -6,12 +6,20 @@ Run from project root: python exam/build_pool.py
 from __future__ import annotations
 import io
 import json
+import random
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = Path(__file__).resolve().parent / "pool.json"
+
+# Cap final pool at this many questions.
+# Teachers preview all of them via ?preview; students get a random 60-question subset.
+TARGET_POOL_SIZE = 180
+# Fixed seed so the same 180 are selected every rebuild — preview matches what
+# students see (their 60 are picked at runtime from these 180).
+SAMPLE_SEED = 42
 
 QUIZ_FILES = [
     "quiz1.md",
@@ -251,6 +259,15 @@ def main() -> int:
                 pool.append(q)
                 per_source_kept[name] = per_source_kept.get(name, 0) + 1
 
+    # Cap at TARGET_POOL_SIZE via deterministic shuffled sample.
+    original_count = len(pool)
+    if len(pool) > TARGET_POOL_SIZE:
+        rng = random.Random(SAMPLE_SEED)
+        idxs = list(range(len(pool)))
+        rng.shuffle(idxs)
+        kept_idxs = sorted(idxs[:TARGET_POOL_SIZE])  # sort to keep source order
+        pool = [pool[i] for i in kept_idxs]
+
     # Strip the 'source' field before writing
     out_pool = [
         {
@@ -263,7 +280,8 @@ def main() -> int:
     ]
     OUT.write_text(json.dumps(out_pool, ensure_ascii=False, indent=2), encoding='utf-8')
 
-    print(f"Wrote {len(out_pool)} questions to {OUT}")
+    print(f"Wrote {len(out_pool)} questions to {OUT}"
+          f" (capped from {original_count}, seed={SAMPLE_SEED})")
     print("\nPer-source counts:")
     for name in QUIZ_FILES:
         kept = per_source_kept.get(name, 0)

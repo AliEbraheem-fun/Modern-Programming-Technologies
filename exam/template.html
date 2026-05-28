@@ -230,9 +230,9 @@
 
   <!-- Screen 1: Login (name / surname) -->
   <div id="screen-login" class="card">
-    <h1>Итоговый тест</h1>
+    <h1>Итоговый тест <span id="preview-tag" class="hidden" style="font-size:14px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;vertical-align:middle;">PREVIEW</span></h1>
     <p class="muted">Современные технологии программирования — лекции 1–6.</p>
-    <p>Введите свои имя и фамилию, чтобы начать. Тест содержит <b>60 вопросов</b> с одним правильным ответом. На прохождение даётся <b>40 минут</b>.</p>
+    <p id="intro-text">Введите свои имя и фамилию, чтобы начать. Тест содержит <b>60 вопросов</b> с одним правильным ответом. На прохождение даётся <b>40 минут</b>.</p>
     <div class="err" id="login-err"></div>
     <div class="row">
       <div>
@@ -302,11 +302,18 @@
   'use strict';
 
   // ===== Config =====
-  const TOTAL_QUESTIONS = 60;
-  const TIMER_MINUTES = 40;
+  // Preview mode: append ?preview to the URL to take ALL questions in the pool
+  // with no timer (for teacher review). Default: 60 random questions, 40-min timer.
+  const PREVIEW = new URLSearchParams(window.location.search).has('preview');
+  const STUDENT_QUESTIONS = 60;
+  const STUDENT_TIMER_MIN = 40;
   const PBKDF2_ITERATIONS = 200000;
   const SALT_LEN = 16;
   const IV_LEN = 12;
+
+  // These get finalised after decryption (preview needs to know pool size).
+  let TOTAL_QUESTIONS = STUDENT_QUESTIONS;
+  let TIMER_MINUTES = STUDENT_TIMER_MIN;
 
   // ===== State =====
   let pool = [];            // full decrypted question pool
@@ -400,6 +407,10 @@
 
   // ===== Exam logic =====
   function buildSession() {
+    // Finalise totals once the pool is known.
+    if (PREVIEW) {
+      TOTAL_QUESTIONS = pool.length;
+    }
     // Pick TOTAL_QUESTIONS from pool, shuffle options inside each
     const picked = shuffle(pool).slice(0, TOTAL_QUESTIONS);
     questions = picked.map(q => {
@@ -461,8 +472,14 @@
 
   function startTimer() {
     startedAt = Date.now();
-    timeLeftSec = TIMER_MINUTES * 60;
     const tEl = $('timer');
+    if (PREVIEW) {
+      // No countdown in preview — show "PREVIEW" badge instead.
+      tEl.textContent = 'PREVIEW';
+      tEl.classList.add('warn');
+      return;
+    }
+    timeLeftSec = TIMER_MINUTES * 60;
     const tick = () => {
       if (submitted) return;
       timeLeftSec -= 1;
@@ -531,6 +548,13 @@
     $('topbar').classList.add('hidden');
     show('screen-result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Show preview indicator on login screen if ?preview is set.
+  if (PREVIEW) {
+    $('preview-tag').classList.remove('hidden');
+    $('intro-text').innerHTML =
+      'Режим <b>предпросмотра</b>: будут показаны <b>все вопросы</b> пула без ограничения по времени.';
   }
 
   // ===== Wire up =====
