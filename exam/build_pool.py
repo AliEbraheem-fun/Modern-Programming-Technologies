@@ -124,6 +124,7 @@ EXCLUDE_PATTERNS = [
 # Add a line as you find questions to remove; matched case-insensitively.
 MANUAL_DROP_QUESTIONS = {
     'Что делает BinaryOperator<Integer>?',
+    'Какой функциональный интерфейс принимает аргумент и ничего не возвращает?',
 }
 
 # Patterns that should ONLY match if found in the question text (not in options/code).
