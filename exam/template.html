@@ -528,7 +528,7 @@
     const es = elapsedSec % 60;
     const timeStr = `${em} мин ${String(es).padStart(2,'0')} сек`;
 
-    $('result-student').textContent = `${studentName} ${studentSurname}`;
+    $('result-student').textContent = `${studentSurname} ${studentName}`;
     $('result-time').textContent = timeStr;
     const big = $('result-score');
     big.textContent = `${correctCount} / ${total}`;
@@ -593,7 +593,7 @@
       }
       buildSession();
       renderQuestions();
-      $('topbar-student').textContent = `${studentName} ${studentSurname}`;
+      $('topbar-student').textContent = `${studentSurname} ${studentName}`;
       $('topbar').classList.remove('hidden');
       show('screen-exam');
       startTimer();
