@@ -122,11 +122,21 @@ EXCLUDE_PATTERNS = [
 
 # Exact question texts to drop manually (after teacher review during preview).
 # Add a line as you find questions to remove; matched case-insensitively.
+# Use this when the question text is unique enough.
 MANUAL_DROP_QUESTIONS = {
     'Что делает BinaryOperator<Integer>?',
     'Какой функциональный интерфейс принимает аргумент и ничего не возвращает?',
     'Что означает девиз Java?',
+    'Что делает BiConsumer<String, Integer>?',
 }
+
+# For questions whose text is generic (e.g. "Что выведет этот код?"), use a
+# substring that uniquely appears in the question's code block. Drop if BOTH
+# the question text matches AND the code contains the snippet.
+MANUAL_DROP_BY_CODE = [
+    # (question_text, code_substring)
+    ('Что выведет этот код?', 'Predicate<String> p = s -> s.length() > 3'),
+]
 
 # Patterns that should ONLY match if found in the question text (not in options/code).
 # Reason: terms like "Metaspace" or "Bootstrap ClassLoader" often appear as distractors
@@ -231,6 +241,12 @@ def is_excluded(q: dict) -> tuple[bool, str]:
     # Manual drop list — exact match against question text, case-insensitive.
     if q['question'].strip().lower() in {s.strip().lower() for s in MANUAL_DROP_QUESTIONS}:
         return True, "in MANUAL_DROP_QUESTIONS"
+    # Manual drop by (question text, code substring) — for generic questions
+    # like "Что выведет этот код?" where the code disambiguates.
+    qlow = q['question'].strip().lower()
+    for qtext, code_snip in MANUAL_DROP_BY_CODE:
+        if qlow == qtext.strip().lower() and code_snip in q['code']:
+            return True, f"in MANUAL_DROP_BY_CODE ({code_snip[:40]!r})"
     haystack = q['question'] + '\n' + q['code'] + '\n' + '\n'.join(q['options'])
     for pat in EXCLUDE_PATTERNS:
         m = pat.search(haystack)
