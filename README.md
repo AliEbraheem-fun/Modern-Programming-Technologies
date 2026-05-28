@@ -41,7 +41,18 @@
 
 ### Итоговый тест
 
-- [Итоговый тест: лекции 1–6 (60 вопросов, 40 минут)](exam.md) — [открыть в отдельной вкладке](exam.html)
+<p>
+  <a href="exam.html" target="_blank" rel="noopener"
+     style="display:inline-block;padding:10px 20px;background:#3F51B5;color:#fff;
+            text-decoration:none;border-radius:6px;font-weight:500;">
+    Открыть итоговый тест (60 вопросов, 40 минут)
+  </a>
+</p>
+
+<p style="color:#6b7280;font-size:14px;">
+  Тест откроется в новой вкладке. Если ссылка не работает, скопируйте адрес
+  <code>exam.html</code> и откройте его напрямую.
+</p>
 
 ### Балльно-Рейтинговая Система
 
