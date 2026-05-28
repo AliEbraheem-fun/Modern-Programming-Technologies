@@ -20,11 +20,12 @@ QUIZ_FILES = [
     "quiz3.md",
     "quiz4.md",
     "quiz5.md",
-    "quiz6.md",
+    # quiz6.md DROPPED — Maven/JDBC/Hibernate are frameworks, not Java basics.
 ]
 
 # A question is excluded if its full text (question + options) matches ANY of these.
 EXCLUDE_PATTERNS = [
+    # --- Versions and dates ---
     re.compile(r"\bJava\s*\d+\b", re.IGNORECASE),
     re.compile(r"\b(JDK|JRE|JVM)\s*\d+\b", re.IGNORECASE),
     re.compile(r"когда\s+(был|была|были)\s+(выпущ|релиз|представл)", re.IGNORECASE),
@@ -36,6 +37,93 @@ EXCLUDE_PATTERNS = [
     re.compile(r"\bкакая\s+версия\b", re.IGNORECASE),
     re.compile(r"\b(stable|релиз|выпуск)\s+\d{4}\b", re.IGNORECASE),
     re.compile(r"\b20[12]\d\b"),  # raw years 2010-2029 in question body
+
+    # --- Frameworks / libraries (out of Java basics scope) ---
+    re.compile(r"\b(Maven|Gradle|Hibernate|JDBC|JPA|Spring|Thymeleaf|Tomcat|Jetty|JWT|BCrypt|MapStruct|Lombok|HikariCP)\b"),
+    re.compile(r"\bpom\.xml\b|\bbuild\.gradle\b", re.IGNORECASE),
+    re.compile(r"\b(DAO|ORM)\b"),
+    re.compile(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE\s+TABLE|DROP\s+TABLE|FROM\s+\w|WHERE\s+\w|JOIN)\b"),
+    re.compile(r"\bSQL[- ]?(инъекци|инжекци)", re.IGNORECASE),
+    re.compile(r"\b@(Entity|Table|Column|Id|GeneratedValue|OneToMany|ManyToOne|Service|Repository|Controller|RestController|Autowired|Bean|Configuration|SpringBootApplication|Transactional|Valid|RestControllerAdvice|ExceptionHandler|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PathVariable|RequestBody|RequestParam|PreAuthorize|EnableMethodSecurity|MockitoBean|WebMvcTest)\b"),
+
+    # --- JPMS / modules (advanced, not basics) ---
+    re.compile(r"\bmodule-info\b", re.IGNORECASE),
+    re.compile(r"\bJPMS\b", re.IGNORECASE),
+    re.compile(r"\bпакет[а-я]*\s+(exports|requires|opens|provides|uses)\b", re.IGNORECASE),
+    re.compile(r"\bдиректив[а-я]*\s+(exports|requires|opens|provides|uses)\b", re.IGNORECASE),
+    re.compile(r"директива\s+(exports|requires|opens|provides|uses)\b", re.IGNORECASE),
+    re.compile(r"\bmodul(е|я|и|ей)?\b", re.IGNORECASE),  # модульная система, модуль и т.п.
+
+    # --- Specific String API beyond .length() ---
+    re.compile(r"\bString\s*\.\s*(join|format|valueOf|copyValueOf|chars|codePoints|matches|repeat|strip|stripLeading|stripTrailing|intern|getBytes)\b"),
+    re.compile(r'"[^"]*"\s*\.\s*(indexOf|lastIndexOf|substring|replaceAll|matches|split|charAt|chars|codePoints|repeat|trim|strip|isBlank|toUpperCase|toLowerCase|contains|startsWith|endsWith|concat|join|format|hashCode|intern|getBytes|toCharArray)\s*\('),
+
+    # --- Specific Collection / Stream / Optional / Files / Math API method calls ---
+    re.compile(r"\b(Collections|Arrays|Stream|Collectors|Optional|Files|Paths|Path|IntStream|LongStream|DoubleStream|Math|Objects|Comparator)\s*\.\s*\w+\s*\("),
+    re.compile(r"\b(ArrayList|LinkedList|HashMap|HashSet|TreeMap|TreeSet|LinkedHashMap|LinkedHashSet|PriorityQueue|Deque|ArrayDeque|Vector|Stack|Hashtable|EnumSet|EnumMap)\s*\.\s*\w+\s*\("),
+    re.compile(r"\bкакой\s+метод\s+(Stream\s*API|Collections|Comparator|Optional|Files|NIO|BufferedReader|Iterator)\b", re.IGNORECASE),
+    re.compile(r"\bкакой\s+принцип\s+именования\b", re.IGNORECASE),
+
+    # --- Concurrency API specifics (keep concepts like synchronized, wait/notify; drop class-name memorization) ---
+    re.compile(r"\b(ExecutorService|ThreadPoolExecutor|CountDownLatch|CyclicBarrier|Semaphore|ReentrantLock|AtomicInteger|AtomicLong|AtomicReference|ConcurrentHashMap|CompletableFuture|FutureTask|ForkJoinPool|ThreadLocal|ScheduledExecutorService)\b"),
+    re.compile(r"\bpackage\s+java\.util\.concurrent\b", re.IGNORECASE),
+    re.compile(r"\bjava\.util\.concurrent\b", re.IGNORECASE),
+
+    # --- Specific I/O classes (concept-level OK, but memorising class hierarchy = drop) ---
+    re.compile(r"\b(BufferedReader|BufferedWriter|FileReader|FileWriter|FileInputStream|FileOutputStream|ObjectInputStream|ObjectOutputStream|PrintWriter|InputStreamReader|OutputStreamWriter|DataInputStream|DataOutputStream|RandomAccessFile)\b"),
+    re.compile(r"\bScanner\b"),  # specific class usage
+
+    # --- NIO.2 specific paths ---
+    re.compile(r"\bNIO(\.2|\s+\.2)?\b"),
+
+    # --- Classloader API specifics (the conceptual variant is gated by QUESTION_ONLY list below) ---
+    re.compile(r"\bClassLoader\s*\.\s*\w+", re.IGNORECASE),
+
+    # --- JNI / native / JVM-internals trivia (out of basics) ---
+    re.compile(r"\bJNI\b"),
+    re.compile(r"\bsystem\s*\.\s*load(Library)?\s*\(", re.IGNORECASE),
+    re.compile(r"\bнативн(ый|ого|ому|ом|ые)\s+метод", re.IGNORECASE),
+    re.compile(r"\bVerification\b", re.IGNORECASE),
+    re.compile(r"\bэтап\w*\s+(Loading|Linking|Initialization|Verification|Preparation|Resolution)\b", re.IGNORECASE),
+    re.compile(r"\bкакие\s+три\s+этапа\s+проходит\s+класс\b", re.IGNORECASE),
+
+    # --- jshell command trivia ---
+    re.compile(r"\bjshell\b", re.IGNORECASE),
+
+    # --- Classloader concept questions (too obscure for "easy to remember basics") ---
+    re.compile(r"\bзагрузчик\w*\s+класс", re.IGNORECASE),
+    re.compile(r"\bкакой\s+принцип\s+использу\w*\s+загрузчик", re.IGNORECASE),
+
+    # --- JPMS specifics that slip through ---
+    re.compile(r"\bopen\s+module\b", re.IGNORECASE),
+    re.compile(r"\bexports\s+[\w.]+\s+to\s+[\w.]+", re.IGNORECASE),
+    re.compile(r"@ParametersAreNonnullByDefault"),
+    re.compile(r"\bpackage-info\.java\b", re.IGNORECASE),
+
+    # --- Annotation internals trivia ---
+    re.compile(r"\bRetentionPolicy\b"),
+
+    # --- Functional-interface method-name memorization (Consumer.accept, Supplier.get etc.) ---
+    re.compile(r"\bкакой\s+метод\s+(Consumer|Supplier|Function|Predicate|BiConsumer|BiFunction|BiPredicate|UnaryOperator|BinaryOperator)", re.IGNORECASE),
+
+    # --- Other API memorization patterns ---
+    # NOTE: we intentionally do NOT use a broad "какой метод" filter — too many
+    # fundamental questions (main(), equals()) would be lost. The specific
+    # framework/class filters above are enough.
+    re.compile(r"\bкакой\s+интерфейс\s+(нужно|должен)\s+реализовать\b", re.IGNORECASE),
+    re.compile(r"\bкакое\s+утверждение\s+верно\s+о\s+потокобезопасности\b", re.IGNORECASE),
+    re.compile(r"\bкакая\s+структура\s+данных\s+лежит\s+в\s+основе\b", re.IGNORECASE),
+]
+
+# Patterns that should ONLY match if found in the question text (not in options/code).
+# Reason: terms like "Metaspace" or "Bootstrap ClassLoader" often appear as distractors
+# in options of conceptual questions ("где хранятся объекты в JVM?") — those should be kept.
+QUESTION_ONLY_EXCLUDE_PATTERNS = [
+    re.compile(r"\bMetaspace\b", re.IGNORECASE),
+    re.compile(r"\b(Bootstrap|Platform|Application)\s+ClassLoader\b", re.IGNORECASE),
+    re.compile(r"\.class\.getClassLoader\(\)"),
+    re.compile(r"\bClassLoad\w*\s+иерархи", re.IGNORECASE),
+    re.compile(r"\bReflection\b", re.IGNORECASE),
 ]
 
 # Match each question block.
@@ -132,6 +220,11 @@ def is_excluded(q: dict) -> tuple[bool, str]:
         m = pat.search(haystack)
         if m:
             return True, f"matched /{pat.pattern}/ -> {m.group(0)!r}"
+    # Question-only patterns: ignore mentions in code/options (used as distractors).
+    for pat in QUESTION_ONLY_EXCLUDE_PATTERNS:
+        m = pat.search(q['question'])
+        if m:
+            return True, f"(question only) matched /{pat.pattern}/ -> {m.group(0)!r}"
     return False, ''
 
 
