@@ -28,6 +28,9 @@
   - [Тест 6: Системы сборки, JDBC и Hibernate](quiz6.md)
   - [Тест 7: Spring Framework и Spring Boot](quiz7.md)
 
+- **Итоговый тест**
+  - [Итоговый тест: лекции 1–6](exam.md)
+
 - **БРС**
   - [ТРПО24](brs-trpo24.md)
   - [ПИ24в](brs-pi24v.md)

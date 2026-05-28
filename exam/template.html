@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Итоговый тест — Современные технологии программирования</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    background: #f3f4f6;
+    color: #1f2937;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 28px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  h1 { font-size: 24px; margin: 0 0 8px; color: #111827; }
+  h2 { font-size: 20px; margin: 24px 0 12px; color: #111827; }
+  p { line-height: 1.5; }
+  .muted { color: #6b7280; }
+  .small { font-size: 13px; }
+
+  /* Header bar (visible during exam) */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  .topbar .student { font-weight: 500; }
+  .topbar .timer {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 18px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e0e7ff;
+    color: #1e3a8a;
+  }
+  .topbar .timer.warn { background: #fef3c7; color: #92400e; }
+  .topbar .timer.danger { background: #fee2e2; color: #991b1b; }
+
+  /* Forms */
+  label { display: block; font-weight: 500; margin-bottom: 6px; }
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+  input[type="text"]:focus, input[type="password"]:focus {
+    outline: none;
+    border-color: #3F51B5;
+    box-shadow: 0 0 0 3px rgba(63,81,181,0.15);
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 540px) { .row { grid-template-columns: 1fr; } }
+
+  button {
+    background: #3F51B5;
+    color: #fff;
+    border: 0;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button:hover { background: #303f9f; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  button.secondary { background: #6b7280; }
+  button.secondary:hover { background: #4b5563; }
+  button.danger { background: #dc2626; }
+  button.danger:hover { background: #b91c1c; }
+
+  .err {
+    background: #fee2e2; color: #991b1b;
+    padding: 10px 12px; border-radius: 6px;
+    margin: 0 0 14px; font-size: 14px;
+    display: none;
+  }
+  .err.show { display: block; }
+
+  /* Progress */
+  .progress-wrap {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+  }
+  .progress-bar {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    margin: 8px 0 0;
+    overflow: hidden;
+  }
+  .progress-bar > div {
+    height: 100%;
+    background: #3F51B5;
+    transition: width 0.3s ease;
+  }
+
+  /* Question */
+  .question-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 14px;
+  }
+  .question-card h3 {
+    margin: 0 0 14px;
+    font-size: 17px;
+    line-height: 1.45;
+    color: #111827;
+    font-weight: 600;
+  }
+  .question-card pre {
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 14px;
+  }
+  .option {
+    display: block;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+    transition: all 0.15s;
+  }
+  .option:hover { border-color: #c7d2fe; background: #f5f6ff; }
+  .option.selected { border-color: #3F51B5; background: #eef2ff; }
+  .option input { margin-right: 10px; vertical-align: middle; }
+
+  /* Footer actions */
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  /* Result screen */
+  .result {
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .result .big {
+    font-size: 64px;
+    font-weight: 700;
+    margin: 16px 0;
+  }
+  .result .big.pass { color: #16a34a; }
+  .result .big.fail { color: #dc2626; }
+  .result .stats {
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    gap: 8px 24px;
+    margin: 24px 0;
+    text-align: left;
+    font-size: 15px;
+  }
+  .result .stats .lbl { color: #6b7280; }
+  .result .stats .val { font-weight: 500; }
+
+  .loading {
+    text-align: center;
+    padding: 40px 0;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #3F51B5;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Topbar (during exam only) -->
+<div id="topbar" class="topbar hidden">
+  <div class="student" id="topbar-student"></div>
+  <div class="timer" id="timer">40:00</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Screen 1: Login (name / surname) -->
+  <div id="screen-login" class="card">
+    <h1>Итоговый тест</h1>
+    <p class="muted">Современные технологии программирования — лекции 1–6.</p>
+    <p>Введите свои имя и фамилию, чтобы начать. Тест содержит <b>60 вопросов</b> с одним правильным ответом. На прохождение даётся <b>40 минут</b>.</p>
+    <div class="err" id="login-err"></div>
+    <div class="row">
+      <div>
+        <label for="name">Имя</label>
+        <input type="text" id="name" autocomplete="given-name" required>
+      </div>
+      <div>
+        <label for="surname">Фамилия</label>
+        <input type="text" id="surname" autocomplete="family-name" required>
+      </div>
+    </div>
+    <button id="btn-login">Продолжить</button>
+  </div>
+
+  <!-- Screen 2: Password (decrypt questions) -->
+  <div id="screen-password" class="card hidden">
+    <h1>Пароль доступа</h1>
+    <p class="muted">Преподаватель сообщит пароль в начале занятия.</p>
+    <div class="err" id="pass-err"></div>
+    <label for="password">Пароль</label>
+    <input type="password" id="password" autocomplete="off">
+    <div class="actions">
+      <button class="secondary" id="btn-back-login">Назад</button>
+      <button id="btn-decrypt">Расшифровать вопросы</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: Loading -->
+  <div id="screen-loading" class="card hidden">
+    <div class="loading"><span class="spinner"></span>Расшифровка вопросов…</div>
+  </div>
+
+  <!-- Screen 4: Exam (questions list) -->
+  <div id="screen-exam" class="hidden">
+    <div class="progress-wrap">
+      <div>Отвечено: <span id="answered-count">0</span> / <span id="total-count">60</span></div>
+      <button class="danger" id="btn-submit">Завершить тест</button>
+    </div>
+    <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+    <div id="questions-container"></div>
+    <div class="actions">
+      <div></div>
+      <button class="danger" id="btn-submit-bottom">Завершить тест</button>
+    </div>
+  </div>
+
+  <!-- Screen 5: Result -->
+  <div id="screen-result" class="card hidden result">
+    <h1>Результат</h1>
+    <div class="big" id="result-percent">—</div>
+    <div class="stats">
+      <div class="lbl">Студент:</div><div class="val" id="result-student">—</div>
+      <div class="lbl">Правильных ответов:</div><div class="val" id="result-correct">—</div>
+      <div class="lbl">Всего вопросов:</div><div class="val" id="result-total">—</div>
+      <div class="lbl">Время затрачено:</div><div class="val" id="result-time">—</div>
+    </div>
+    <p class="muted small" id="result-note"></p>
+  </div>
+
+</div>
+
+<!-- Encrypted question pool (base64: salt || iv || ciphertext+tag) -->
+<script id="enc-pool" type="application/octet-stream">{{ENCRYPTED_POOL}}</script>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===== Config =====
+  const TOTAL_QUESTIONS = 60;
+  const TIMER_MINUTES = 40;
+  const PBKDF2_ITERATIONS = 200000;
+  const SALT_LEN = 16;
+  const IV_LEN = 12;
+
+  // ===== State =====
+  let pool = [];            // full decrypted question pool
+  let questions = [];       // 60 questions selected for this session (options pre-shuffled, correct re-indexed)
+  let answers = [];         // answers[i] = index of selected option in questions[i].options, or -1
+  let timerId = null;
+  let timeLeftSec = TIMER_MINUTES * 60;
+  let startedAt = null;
+  let studentName = '';
+  let studentSurname = '';
+  let submitted = false;
+
+  // ===== DOM =====
+  const $ = (id) => document.getElementById(id);
+
+  // ===== Helpers =====
+  function show(id) {
+    ['screen-login','screen-password','screen-loading','screen-exam','screen-result']
+      .forEach(s => $(s).classList.toggle('hidden', s !== id));
+  }
+
+  function showErr(elId, msg) {
+    const el = $(elId);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearErr(elId) {
+    const el = $(elId);
+    el.textContent = '';
+    el.classList.remove('show');
+  }
+
+  // Cryptographically strong shuffle
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Render code block from markdown fence to <pre>
+  function renderCode(codeBlock) {
+    // Strip leading/trailing ```lang fences
+    const m = /^```\w*\n?([\s\S]*?)\n?```$/.exec(codeBlock.trim());
+    const body = m ? m[1] : codeBlock;
+    return '<pre>' + escapeHtml(body) + '</pre>';
+  }
+
+  // ===== Decryption =====
+  function base64ToBytes(b64) {
+    const bin = atob(b64.replace(/\s+/g, ''));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  async function deriveKey(password, salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false, ['decrypt']);
+  }
+
+  async function decryptPool(password) {
+    const raw = $('enc-pool').textContent.trim();
+    const all = base64ToBytes(raw);
+    const salt = all.slice(0, SALT_LEN);
+    const iv = all.slice(SALT_LEN, SALT_LEN + IV_LEN);
+    const ct = all.slice(SALT_LEN + IV_LEN);
+    const key = await deriveKey(password, salt);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv }, key, ct);
+    const text = new TextDecoder().decode(plaintext);
+    return JSON.parse(text);
+  }
+
+  // ===== Exam logic =====
+  function buildSession() {
+    // Pick TOTAL_QUESTIONS from pool, shuffle options inside each
+    const picked = shuffle(pool).slice(0, TOTAL_QUESTIONS);
+    questions = picked.map(q => {
+      const order = shuffle(q.options.map((_, i) => i));
+      const shuffledOptions = order.map(i => q.options[i]);
+      const newCorrect = order.indexOf(q.correct);
+      return {
+        q: q.q,
+        code: q.code || '',
+        options: shuffledOptions,
+        correct: newCorrect,
+      };
+    });
+    answers = new Array(questions.length).fill(-1);
+    $('total-count').textContent = questions.length;
+  }
+
+  function renderQuestions() {
+    const container = $('questions-container');
+    container.innerHTML = '';
+    questions.forEach((q, qi) => {
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      const codeHtml = q.code ? renderCode(q.code) : '';
+      let optionsHtml = '';
+      q.options.forEach((opt, oi) => {
+        const id = `q${qi}-o${oi}`;
+        optionsHtml += `
+          <label class="option" for="${id}">
+            <input type="radio" name="q${qi}" id="${id}" value="${oi}">
+            ${escapeHtml(opt)}
+          </label>`;
+      });
+      card.innerHTML = `
+        <h3>${qi + 1}. ${escapeHtml(q.q)}</h3>
+        ${codeHtml}
+        ${optionsHtml}
+      `;
+      container.appendChild(card);
+
+      // Bind change handlers
+      card.querySelectorAll(`input[name="q${qi}"]`).forEach(input => {
+        input.addEventListener('change', (e) => {
+          answers[qi] = parseInt(e.target.value, 10);
+          card.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+          e.target.closest('.option').classList.add('selected');
+          updateProgress();
+        });
+      });
+    });
+  }
+
+  function updateProgress() {
+    const answered = answers.filter(a => a !== -1).length;
+    $('answered-count').textContent = answered;
+    const pct = Math.round((answered / questions.length) * 100);
+    $('progress-fill').style.width = pct + '%';
+  }
+
+  function startTimer() {
+    startedAt = Date.now();
+    timeLeftSec = TIMER_MINUTES * 60;
+    const tEl = $('timer');
+    const tick = () => {
+      if (submitted) return;
+      timeLeftSec -= 1;
+      if (timeLeftSec <= 0) {
+        timeLeftSec = 0;
+        renderTimer();
+        clearInterval(timerId);
+        submitExam(/*auto=*/true);
+        return;
+      }
+      renderTimer();
+    };
+    renderTimer();
+    timerId = setInterval(tick, 1000);
+
+    function renderTimer() {
+      const m = Math.floor(timeLeftSec / 60);
+      const s = timeLeftSec % 60;
+      tEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      tEl.classList.toggle('warn', timeLeftSec <= 300 && timeLeftSec > 60);
+      tEl.classList.toggle('danger', timeLeftSec <= 60);
+    }
+  }
+
+  function submitExam(auto) {
+    if (submitted) return;
+    if (!auto) {
+      const unanswered = answers.filter(a => a === -1).length;
+      const msg = unanswered > 0
+        ? `Не отвечено: ${unanswered}. Завершить тест?`
+        : 'Завершить тест?';
+      if (!confirm(msg)) return;
+    }
+    submitted = true;
+    clearInterval(timerId);
+
+    let correctCount = 0;
+    questions.forEach((q, i) => {
+      if (answers[i] === q.correct) correctCount += 1;
+    });
+    const total = questions.length;
+    const pct = Math.round((correctCount / total) * 100);
+
+    const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+    const em = Math.floor(elapsedSec / 60);
+    const es = elapsedSec % 60;
+    const timeStr = `${em} мин ${String(es).padStart(2,'0')} сек`;
+
+    $('result-student').textContent = `${studentName} ${studentSurname}`;
+    $('result-correct').textContent = `${correctCount} из ${total}`;
+    $('result-total').textContent = total;
+    $('result-time').textContent = timeStr;
+    const big = $('result-percent');
+    big.textContent = pct + '%';
+    big.classList.toggle('pass', pct >= 60);
+    big.classList.toggle('fail', pct < 60);
+
+    let note = '';
+    if (auto) {
+      note = 'Время вышло — тест завершён автоматически.';
+    } else {
+      note = 'Сохраните скриншот для подтверждения результата.';
+    }
+    $('result-note').textContent = note;
+
+    $('topbar').classList.add('hidden');
+    show('screen-result');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ===== Wire up =====
+  $('btn-login').addEventListener('click', () => {
+    clearErr('login-err');
+    const n = $('name').value.trim();
+    const s = $('surname').value.trim();
+    if (!n || !s) {
+      showErr('login-err', 'Введите и имя, и фамилию.');
+      return;
+    }
+    studentName = n;
+    studentSurname = s;
+    show('screen-password');
+    setTimeout(() => $('password').focus(), 50);
+  });
+
+  $('btn-back-login').addEventListener('click', () => {
+    clearErr('pass-err');
+    $('password').value = '';
+    show('screen-login');
+  });
+
+  $('btn-decrypt').addEventListener('click', async () => {
+    clearErr('pass-err');
+    const password = $('password').value;
+    if (!password) {
+      showErr('pass-err', 'Введите пароль.');
+      return;
+    }
+    show('screen-loading');
+    try {
+      pool = await decryptPool(password);
+      if (!Array.isArray(pool) || pool.length < TOTAL_QUESTIONS) {
+        throw new Error('Пул вопросов повреждён');
+      }
+      buildSession();
+      renderQuestions();
+      $('topbar-student').textContent = `${studentName} ${studentSurname}`;
+      $('topbar').classList.remove('hidden');
+      show('screen-exam');
+      startTimer();
+      window.scrollTo({ top: 0 });
+    } catch (e) {
+      console.error(e);
+      show('screen-password');
+      showErr('pass-err', 'Не удалось расшифровать вопросы. Проверьте пароль.');
+    }
+  });
+
+  $('btn-submit').addEventListener('click', () => submitExam(false));
+  $('btn-submit-bottom').addEventListener('click', () => submitExam(false));
+
+  // Submit on Enter in password field
+  $('password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('btn-decrypt').click();
+  });
+  $('surname').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('btn-login').click();
+  });
+
+  // Warn before leaving
+  window.addEventListener('beforeunload', (e) => {
+    if (!submitted && questions.length > 0) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

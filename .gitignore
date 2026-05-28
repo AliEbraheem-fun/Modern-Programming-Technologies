@@ -11,3 +11,8 @@ Thumbs.db
 target/
 build/
 *.class
+
+# Exam intermediate files (contain cleartext answers — never commit)
+exam/pool.json
+exam/pool.enc.txt
+exam/__pycache__/
