@@ -281,12 +281,10 @@
 
   <!-- Screen 5: Result -->
   <div id="screen-result" class="card hidden result">
-    <h1>Результат</h1>
-    <div class="big" id="result-percent">—</div>
+    <h2 style="margin:0 0 4px;color:#6b7280;font-weight:500;">Результат</h2>
+    <div id="result-student" style="font-size:22px;font-weight:600;color:#111827;margin-bottom:8px;">—</div>
+    <div class="big" id="result-score">—</div>
     <div class="stats">
-      <div class="lbl">Студент:</div><div class="val" id="result-student">—</div>
-      <div class="lbl">Правильных ответов:</div><div class="val" id="result-correct">—</div>
-      <div class="lbl">Всего вопросов:</div><div class="val" id="result-total">—</div>
       <div class="lbl">Время затрачено:</div><div class="val" id="result-time">—</div>
     </div>
     <p class="muted small" id="result-note"></p>
@@ -302,9 +300,10 @@
   'use strict';
 
   // ===== Config =====
-  // Preview mode: append ?preview to the URL to take ALL questions in the pool
-  // with no timer (for teacher review). Default: 60 random questions, 40-min timer.
-  const PREVIEW = new URLSearchParams(window.location.search).has('preview');
+  // Preview mode is DISABLED for student release. To re-enable for teacher
+  // review, change the next line to:
+  //   const PREVIEW = new URLSearchParams(window.location.search).has('preview');
+  const PREVIEW = false;
   const STUDENT_QUESTIONS = 60;
   const STUDENT_TIMER_MIN = 40;
   const PBKDF2_ITERATIONS = 200000;
@@ -523,7 +522,6 @@
       if (answers[i] === q.correct) correctCount += 1;
     });
     const total = questions.length;
-    const pct = Math.round((correctCount / total) * 100);
 
     const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
     const em = Math.floor(elapsedSec / 60);
@@ -531,13 +529,13 @@
     const timeStr = `${em} мин ${String(es).padStart(2,'0')} сек`;
 
     $('result-student').textContent = `${studentName} ${studentSurname}`;
-    $('result-correct').textContent = `${correctCount} из ${total}`;
-    $('result-total').textContent = total;
     $('result-time').textContent = timeStr;
-    const big = $('result-percent');
-    big.textContent = pct + '%';
-    big.classList.toggle('pass', pct >= 60);
-    big.classList.toggle('fail', pct < 60);
+    const big = $('result-score');
+    big.textContent = `${correctCount} / ${total}`;
+    // Pass threshold: 60% of total (e.g. 36 / 60).
+    const passThreshold = Math.ceil(total * 0.6);
+    big.classList.toggle('pass', correctCount >= passThreshold);
+    big.classList.toggle('fail', correctCount < passThreshold);
 
     let note = '';
     if (auto) {
