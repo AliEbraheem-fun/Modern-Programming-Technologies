@@ -129,6 +129,7 @@ MANUAL_DROP_QUESTIONS = {
     'Что означает девиз Java?',
     'Что делает BiConsumer<String, Integer>?',
     'Чем интерфейс отличается от абстрактного класса?',
+    'Что произойдёт при выполнении false && someMethod()?',
 }
 
 # For questions whose text is generic (e.g. "Что выведет этот код?"), use a
