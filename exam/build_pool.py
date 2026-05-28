@@ -148,6 +148,13 @@ MANUAL_DROP_QUESTIONS = {
     'Какой из четырёх типов вложенных классов НЕ привязан к экземпляру внешнего класса?',
     'Как EnumMap хранит данные внутри?',
     'Какое исключение является проверяемым (checked)?',
+    # Batch: functional-interface drops (keep only the 6 chosen by teacher)
+    'Что такое лямбда-выражение в Java?',
+    'Что делает аннотация @FunctionalInterface?',
+    'Можно ли использовать super внутри лямбда-выражения?',
+    'Какой функциональный интерфейс не принимает аргументов и возвращает значение?',
+    'Чем BiPredicate<T, U> отличается от Predicate<T>?',
+    'Какой тип у лямбды (a, b) -> a + b, если она присвоена BinaryOperator<Integer>?',
 }
 
 # For questions whose text is generic (e.g. "Что выведет этот код?"), use a
