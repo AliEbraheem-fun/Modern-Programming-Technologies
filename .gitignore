@@ -16,3 +16,6 @@ build/
 exam/pool.json
 exam/pool.enc.txt
 exam/__pycache__/
+
+# Exam password — stored locally only, never committed
+exam/.password

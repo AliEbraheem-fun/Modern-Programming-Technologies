@@ -3,13 +3,19 @@
 Output format (base64): salt(16) || iv(12) || ciphertext+tag
 Parameters: PBKDF2-SHA256, 200_000 iterations, AES-256-GCM.
 
-Usage:
-    python exam/encrypt_pool.py [--password PASSWORD]
-Default password: ***REMOVED***
+Password is read from one of (in order):
+  1. The --password CLI flag
+  2. The EXAM_PASSWORD environment variable
+  3. The file `exam/.password` (gitignored)
+
+The repo intentionally contains NO default password — keep yours in a local
+note or in `exam/.password` (which is gitignored), and pass on the CLI when
+rebuilding from a clean checkout.
 """
 from __future__ import annotations
 import argparse
 import base64
+import getpass
 import io
 import json
 import os
@@ -34,7 +40,19 @@ PBKDF2_ITERATIONS = 200_000
 SALT_LEN = 16
 IV_LEN = 12  # AES-GCM standard
 KEY_LEN = 32  # AES-256
-DEFAULT_PASSWORD = "***REMOVED***"
+PASSWORD_FILE = ROOT / ".password"  # gitignored
+
+
+def resolve_password(cli_password: str | None) -> str:
+    """CLI flag > EXAM_PASSWORD env var > exam/.password file > interactive prompt."""
+    if cli_password:
+        return cli_password
+    env = os.environ.get("EXAM_PASSWORD")
+    if env:
+        return env
+    if PASSWORD_FILE.exists():
+        return PASSWORD_FILE.read_text(encoding="utf-8").strip()
+    return getpass.getpass("Exam password: ")
 
 
 def encrypt(plaintext: bytes, password: str) -> bytes:
@@ -56,8 +74,9 @@ def main() -> int:
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--password", default=DEFAULT_PASSWORD,
-                        help=f"Exam password (default: {DEFAULT_PASSWORD!r})")
+    parser.add_argument("--password", default=None,
+                        help="Exam password (or set EXAM_PASSWORD env var, or "
+                             "put it in exam/.password — gitignored)")
     args = parser.parse_args()
 
     if not POOL_PATH.exists():
@@ -65,19 +84,21 @@ def main() -> int:
                          f"Run `python exam/build_pool.py` first.\n")
         return 1
 
+    password = resolve_password(args.password)
+    if not password:
+        sys.stderr.write("No password provided.\n")
+        return 1
+
     plaintext = POOL_PATH.read_text(encoding="utf-8").encode("utf-8")
-    blob = encrypt(plaintext, args.password)
+    blob = encrypt(plaintext, password)
     b64 = base64.b64encode(blob).decode("ascii")
 
     OUT_PATH.write_text(b64, encoding="ascii")
     print(f"Encrypted {len(plaintext)} bytes -> {len(b64)} base64 chars")
-    print(f"  password   : {args.password!r}")
+    print(f"  password   : (not shown; {len(password)} characters)")
     print(f"  iterations : {PBKDF2_ITERATIONS:,}")
     print(f"  algorithm  : PBKDF2-SHA256 + AES-256-GCM")
     print(f"  output     : {OUT_PATH}")
-    print()
-    print("First 80 chars of blob:")
-    print("  " + b64[:80] + "...")
     return 0
 
 
