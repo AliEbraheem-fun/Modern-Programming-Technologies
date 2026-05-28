@@ -19,3 +19,8 @@ exam/__pycache__/
 
 # Exam password — stored locally only, never committed
 exam/.password
+
+# Teacher-only files — never commit
+exam/README.md
+exam/scrub_callback.py
+exam/replacements.txt
