@@ -561,6 +561,19 @@ t.join();
 System.out.println("Состояние (TERMINATED): " + t.getState());
 ```
 
+**Приоритеты потоков.** У каждого потока есть приоритет — число от `Thread.MIN_PRIORITY` (1) до `Thread.MAX_PRIORITY` (10), по умолчанию `Thread.NORM_PRIORITY` (5). Изменить и прочитать его можно методами `setPriority(int)` и `getPriority()`. Новый поток по умолчанию наследует приоритет того потока, который его создал.
+
+```java
+Thread worker = new Thread(() -> System.out.println("Работаю"));
+worker.setPriority(Thread.MAX_PRIORITY); // 10 — «постарайся выполнить меня поскорее»
+System.out.println("Приоритет: " + worker.getPriority());
+worker.start();
+```
+
+Здесь важна честная оговорка: приоритет — это лишь подсказка планировщику операционной системы, а не гарантия. ОС вправе распределять процессорное время иначе, и на разных платформах поведение отличается. Полагаться на приоритеты для корректности программы нельзя — если порядок выполнения критичен, нужна настоящая синхронизация (о ней — в следующем разделе), а не «более важный» поток.
+
+Ещё один полезный флаг — `setDaemon(true)`. Он превращает поток в фоновый (daemon): JVM не ждёт завершения таких потоков и закрывается, как только заканчиваются все обычные («пользовательские») потоки. Демонами обычно делают вспомогательные потоки — например, фоновую загрузку данных, — которым незачем блокировать выход из программы.
+
 ### 3.6 Проблемы многопоточности и синхронизация
 
 Многопоточность даёт скорость, но и создаёт проблемы. Самая коварная из них — **состояние гонки**: когда два потока одновременно изменяют одни и те же данные, результат становится непредсказуемым.
@@ -823,30 +836,7 @@ executor.shutdown();
 
 ---
 
-## Часть 4: Итоги
-
-Сегодня мы прошли большой путь — от коллекций через файловый ввод/вывод до многопоточности. Вот краткая сводка ключевых классов и интерфейсов по каждой теме:
-
-| Тема | Ключевые классы/интерфейсы |
-|------|---------------------------|
-| List | `ArrayList`, `LinkedList` |
-| Set | `HashSet`, `LinkedHashSet`, `TreeSet` |
-| Map | `HashMap`, `LinkedHashMap`, `TreeMap` |
-| Queue | `LinkedList`, `PriorityQueue`, `ArrayDeque` |
-| Concurrent | `ConcurrentHashMap`, `CopyOnWriteArrayList`, `BlockingQueue` |
-| Сортировка | `Comparable`, `Comparator`, `Collections.sort()` |
-| Stream API | `stream()`, `filter()`, `map()`, `collect()`, `reduce()` |
-| Байтовые I/O | `InputStream`, `OutputStream`, `FileInputStream`, `BufferedInputStream` |
-| Символьные I/O | `Reader`, `Writer`, `FileReader`, `BufferedReader`, `PrintWriter` |
-| Процесс vs Поток | Процесс — отдельная JVM с изолированной памятью; Поток — лёгковесная единица внутри процесса с общей кучей |
-| Поток | `Thread`, `Runnable`, `start()`, `join()`, `sleep()`, `interrupt()` |
-| Синхронизация | `synchronized` (монитор + видимость памяти), `volatile` (только видимость), `wait()`, `notify()`, `notifyAll()` |
-| Атомарные классы | `AtomicInteger`, `AtomicLong`, `AtomicBoolean`, `AtomicReference<T>` |
-| Пулы потоков | `ExecutorService`, `Executors.newFixedThreadPool()`, `Future<T>`, `Callable<T>` |
-
----
-
-## Часть 5: Дополнительные примеры
+## Часть 4: Дополнительные примеры
 
 ### Полный пример Stream API
 
@@ -878,8 +868,31 @@ IntSummaryStatistics stats = students.stream()
 System.out.printf("Мин: %d, Макс: %d, Среднее: %.1f%n",
     stats.getMin(), stats.getMax(), stats.getAverage());
 
-// Параллельный стрим для больших данных:
+// Параллельный поток для больших данных:
 long count = students.parallelStream()
     .filter(s -> s.grade() >= 80)
     .count();
 ```
+
+---
+
+## Часть 5: Итоги
+
+Сегодня мы прошли большой путь — от коллекций через файловый ввод/вывод до многопоточности. Вот краткая сводка ключевых классов и интерфейсов по каждой теме:
+
+| Тема | Ключевые классы/интерфейсы |
+|------|---------------------------|
+| List | `ArrayList`, `LinkedList` |
+| Set | `HashSet`, `LinkedHashSet`, `TreeSet` |
+| Map | `HashMap`, `LinkedHashMap`, `TreeMap` |
+| Queue | `LinkedList`, `PriorityQueue`, `ArrayDeque` |
+| Concurrent | `ConcurrentHashMap`, `CopyOnWriteArrayList`, `BlockingQueue` |
+| Сортировка | `Comparable`, `Comparator`, `Collections.sort()` |
+| Stream API | `stream()`, `filter()`, `map()`, `collect()`, `reduce()` |
+| Байтовые I/O | `InputStream`, `OutputStream`, `FileInputStream`, `BufferedInputStream` |
+| Символьные I/O | `Reader`, `Writer`, `FileReader`, `BufferedReader`, `PrintWriter` |
+| Процесс vs Поток | Процесс — отдельная JVM с изолированной памятью; Поток — лёгковесная единица внутри процесса с общей кучей |
+| Поток | `Thread`, `Runnable`, `start()`, `join()`, `sleep()`, `interrupt()` |
+| Синхронизация | `synchronized` (монитор + видимость памяти), `volatile` (только видимость), `wait()`, `notify()`, `notifyAll()` |
+| Атомарные классы | `AtomicInteger`, `AtomicLong`, `AtomicBoolean`, `AtomicReference<T>` |
+| Пулы потоков | `ExecutorService`, `Executors.newFixedThreadPool()`, `Future<T>`, `Callable<T>` |

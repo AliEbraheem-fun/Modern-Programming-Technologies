@@ -1,4 +1,4 @@
-# Тест 4: Вложенные классы, Обобщения и Исключения (Лекция 4)
+# Тест 4: Вложенные классы, Обобщения, Исключения и Отладка (Лекция 4)
 
 <style>
 .quiz-container {
@@ -699,6 +699,78 @@ catch (SpecificException e) { log.error("Ошибка", e); throw e; }
 <div class="quiz-feedback"></div>
 </div>
 
+<!-- ===== РАЗДЕЛ 5: ОТЛАДКА (Вопросы 46–52) ===== -->
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 46. Чем точка останова (breakpoint) принципиально удобнее вызовов println() при поиске ошибки?</h4>
+
+<div class="quiz-option" data-index="0">Ускоряет выполнение программы за счёт исключения лишних вычислений</div>
+<div class="quiz-option" data-index="1">Автоматически записывает весь вывод программы в файл на диске</div>
+<div class="quiz-option" data-index="2">Останавливает программу и показывает сразу все переменные текущего кадра, не заставляя заранее угадывать, что печатать</div>
+<div class="quiz-option" data-index="3">Позволяет запускать программу без установки JDK</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 47. В чём отличие условной точки останова (Condition) от обычной точки останова (line breakpoint)?</h4>
+
+<div class="quiz-option" data-index="0">Условная останавливает программу только тогда, когда истинно заданное в поле Condition выражение, а обычная — при каждом подходе к строке</div>
+<div class="quiz-option" data-index="1">Условная точка останова работает только с примитивными числовыми переменными</div>
+<div class="quiz-option" data-index="2">Обычная точка останова доступна только в VS Code, а условная — только в IntelliJ IDEA</div>
+<div class="quiz-option" data-index="3">Условную точку останова нельзя снять после установки</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 48. Какая команда пошагового выполнения заходит внутрь вызываемого метода, а не выполняет его целиком?</h4>
+
+<div class="quiz-option" data-index="0">Step Over</div>
+<div class="quiz-option" data-index="1">Step Into</div>
+<div class="quiz-option" data-index="2">Step Out</div>
+<div class="quiz-option" data-index="3">Resume</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 49. Чем Step Over отличается от Step Into?</h4>
+
+<div class="quiz-option" data-index="0">Step Over доступен только для статических методов</div>
+<div class="quiz-option" data-index="1">Step Into пропускает выполнение цикла целиком</div>
+<div class="quiz-option" data-index="2">Step Over останавливает программу только на исключениях</div>
+<div class="quiz-option" data-index="3">Step Over выполняет вызываемый метод целиком, не показывая происходящее внутри, а Step Into заходит внутрь этого метода</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 50. В примере с AverageCalculator из лекции окно Variables в точке останова на return sum / count; показало sum = 60.0 и count = 4, хотя корректных чисел в списке было три. О чём это говорит?</h4>
+
+<div class="quiz-option" data-index="0">Счётчик count увеличивается для каждой строки списка, включая ту, что не разобралась в число</div>
+<div class="quiz-option" data-index="1">Переменная sum вычислена неверно и должна быть равна 30.0</div>
+<div class="quiz-option" data-index="2">Список rows хранит дублирующиеся элементы</div>
+<div class="quiz-option" data-index="3">Метод Double.parseDouble бросает исключение, которое отладчик не может перехватить</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 51. Для чего используется окно Evaluate Expression в отладчике?</h4>
+
+<div class="quiz-option" data-index="0">Чтобы посмотреть историю всех прошлых значений выбранной переменной</div>
+<div class="quiz-option" data-index="1">Чтобы автоматически исправить найденную ошибку в коде</div>
+<div class="quiz-option" data-index="2">Чтобы разово вычислить произвольное Java-выражение, включая вызовы методов, в контексте уже остановленной программы</div>
+<div class="quiz-option" data-index="3">Чтобы заменить точки останова логированием без перезапуска IDE</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 52. Что показывает окно Call Stack (Frames) в отладчике?</h4>
+
+<div class="quiz-option" data-index="0">Список всех точек останова, расставленных в проекте</div>
+<div class="quiz-option" data-index="1">Цепочку кадров вызовов методов — от текущей точки остановки до main, то есть кто кого вызвал</div>
+<div class="quiz-option" data-index="2">Список переменных, изменённых вручную через F2 с начала сеанса отладки</div>
+<div class="quiz-option" data-index="3">Список исключений, которые метод объявляет в throws</div>
+<div class="quiz-feedback"></div>
+</div>
+
 <button class="quiz-btn" onclick="showScore()">Показать результат</button>
 
 <div class="quiz-score" id="quizScore">
@@ -756,7 +828,14 @@ catch (SpecificException e) { log.error("Ошибка", e); throw e; }
     'Вопрос 42': 'Try-with-resources (Java 7+) автоматически закрывает ресурсы после блока try. Ресурс должен реализовать интерфейс AutoCloseable с методом close().',
     'Вопрос 43': 'Сначала выполняется тело try — "used ", затем ресурс автоматически закрывается — вызывается close(), который печатает "closed ". Итого: used closed.',
     'Вопрос 44': 'Exception chaining — оборачивание исходного исключения (cause) в новое: throw new HighLevel("msg", originalException). Это сохраняет информацию о первопричине.',
-    'Вопрос 45': 'Вариант A — двойная ошибка: перехват слишком широкого Exception маскирует конкретные проблемы, а пустой catch «проглатывает» исключение без логирования и обработки.'
+    'Вопрос 45': 'Вариант A — двойная ошибка: перехват слишком широкого Exception маскирует конкретные проблемы, а пустой catch «проглатывает» исключение без логирования и обработки.',
+    'Вопрос 46': 'Точка останова замораживает выполнение в нужном месте и открывает окно Variables со всеми видимыми переменными сразу, тогда как println() требует заранее решить, какое значение печатать, и переписывать код при новой гипотезе.',
+    'Вопрос 47': 'Условие в поле Condition — обычное Java-выражение, доступное в контексте строки; программа остановится только когда оно истинно. Это позволяет поймать одну нужную итерацию из тысячи, не проходя вручную через все остальные.',
+    'Вопрос 48': 'Step Into (F7 в IntelliJ IDEA, F11 в VS Code) переводит выполнение внутрь вызываемого метода, тогда как Step Over выполняет вызов целиком, не показывая, что происходит внутри него.',
+    'Вопрос 49': 'Step Over — рабочая лошадка отладки: строку с вызовом вроде list.sort(comparator) проходят Step Over, потому что чужой код не интересен. Step Into используют, когда подозревают ошибку именно внутри вызываемого метода.',
+    'Вопрос 50': 'sum = 60.0 верна (10+20+30), а вот count не должен был досчитаться до 4: инкремент count стоит вне блока try, поэтому строка "abc", не разобравшаяся в число, всё равно увеличивает счётчик.',
+    'Вопрос 51': 'Evaluate Expression (Alt+F8 в IntelliJ IDEA) выполняет введённое выражение прямо в контексте остановленного потока — можно проверить гипотезу вроде sum / (count - 1), не перекомпилируя проект.',
+    'Вопрос 52': 'Каждый вызов метода кладёт на стек кадр с его параметрами и локальными переменными. Щелчок по кадру в окне Frames показывает переменные именно того вызова — удобно, когда нужно понять, кто передал методу некорректные данные.'
   };
 
   document.querySelectorAll('.quiz-option').forEach(function(option) {

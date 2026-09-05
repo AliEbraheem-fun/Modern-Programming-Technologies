@@ -62,6 +62,18 @@ public class StudentService {
 
 Преимущества: поле может быть `final` (неизменяемое), при отсутствии зависимости объект просто не создастся (ошибка на старте, а не в рантайме).
 
+При двух-трёх зависимостях такой конструктор пишется одной рукой, но в сервисе с шестью `final`-полями это уже шесть строк параметров и шесть строк присваиваний ради кода, который не содержит ни капли логики. Если вы подключили Lombok (разобрали его в Лекции 6, раздел 3.6), аннотация `@RequiredArgsConstructor` над классом сгенерирует ровно такой конструктор сама — по всем `final`-полям:
+
+```java
+@Service
+@RequiredArgsConstructor   // Lombok: конструктор по всем final-полям
+public class StudentService {
+    private final StudentRepository repository;
+}
+```
+
+Результат для Spring неотличим от конструктора, написанного вручную, — контейнер по-прежнему видит единственный конструктор и внедряет в него зависимости так же, как в примере выше.
+
 #### 2. Через сеттер (Setter Injection)
 
 ```java
@@ -218,9 +230,45 @@ public class AppConfig {
 }
 ```
 
+Метод, помеченный `@Bean`, — это **фабричный метод** (factory method): контейнер не создаёт объект через `new` сам, а вызывает этот метод и регистрирует то, что он вернул, как бин. В Spring есть три способа задать бин через фабричный метод:
+
+- **`@Bean`-метод в `@Configuration`-классе** — вариант выше, самый распространённый сегодня.
+- **`factory-method` в XML** — вместо вызова конструктора у `<bean>` указывается атрибут `factory-method` (имя метода-фабрики) и, если метод нестатический, `factory-bean` (бин, на котором его вызвать).
+- **Интерфейс `FactoryBean<T>`** — класс реализует `getObject()` (что вернуть как бин), `getObjectType()` и `isSingleton()`; в контейнер попадает не сам `FactoryBean`, а то, что вернул `getObject()`.
+
+Типичный случай применения — нужно зарегистрировать как бин объект из чужой библиотеки, исходный код которой вы редактировать не можете, а значит, пометить его класс `@Component` не получится. Фабричный метод в такой ситуации — единственный способ отдать объект под управление контейнера: он собирает объект «под капотом» (через статический метод, конструктор с параметрами или билдер) и вручает контейнеру уже готовый результат.
+
 ```xml
 <!-- 3. Через XML — традиционное описание (легаси) -->
 <bean id="studentService" class="com.example.StudentService"/>
+```
+
+В новых проектах конфигурацию через XML почти не пишут — её вытеснили аннотации и Java-конфигурация (`@Bean`). Но такой файл (обычно `beans.xml`) всё ещё встречается в старых проектах, а сам синтаксис входит в программу экзамена, поэтому разберём его на примере из двух бинов:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="studentRepository" class="com.example.StudentRepository"/>
+
+    <bean id="studentService" class="com.example.StudentService"
+          scope="singleton" init-method="init" destroy-method="cleanup">
+        <constructor-arg ref="studentRepository"/>
+        <property name="maxResults" value="50"/>
+    </bean>
+
+</beans>
+```
+
+Здесь `studentService` получает `studentRepository` через конструктор (`<constructor-arg ref="...">` — ссылка на другой бин по `id`) и дополнительно через сеттер `setMaxResults(50)` (`<property name="..." value="...">` — простое значение). Атрибуты `scope`, `init-method` и `destroy-method` задают то же самое, что аннотации `@Scope`, `@PostConstruct` и `@PreDestroy` в аннотационном подходе. Загружается такой контекст тремя строчками:
+
+```java
+ApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml");
+StudentService service = ctx.getBean("studentService", StudentService.class);
+service.findAll();
 ```
 
 ---
@@ -456,7 +504,7 @@ public class StudentRestController {
     @PostMapping
     public ResponseEntity<Student> addStudent(@RequestBody Student student) {
         Student saved = studentService.save(student);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        return ResponseEntity.created(URI.create("/api/students/" + saved.getId())).body(saved);
     }
 
     @PutMapping("/{id}")

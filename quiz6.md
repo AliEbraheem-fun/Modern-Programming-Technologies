@@ -1,4 +1,4 @@
-# Тест 6: Системы сборки, JDBC и Hibernate (Лекция 6)
+# Тест 6: Системы сборки, JDBC, Hibernate, Stream API и транзакции (Лекция 6)
 
 <style>
 .quiz-container {
@@ -750,6 +750,170 @@ public class Employee {
 <div class="quiz-feedback"></div>
 </div>
 
+<!-- ===== РАЗДЕЛ 6: LOMBOK (Вопросы 51–53) ===== -->
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 51. Какой набор аннотаций Lombok даёт геттеры, сеттеры и оба конструктора (пустой и полный) для JPA-сущности, но НЕ трогает equals()/hashCode() и toString()?</h4>
+
+<div class="quiz-option" data-index="0">@Getter, @Setter, @NoArgsConstructor, @AllArgsConstructor</div>
+<div class="quiz-option" data-index="1">@Data</div>
+<div class="quiz-option" data-index="2">@Value</div>
+<div class="quiz-option" data-index="3">@Builder</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 52. Почему @NoArgsConstructor обязателен именно для JPA-сущностей, а не просто удобен для сокращения кода?</h4>
+
+<div class="quiz-option" data-index="0">Потому что Java требует конструктор без аргументов у любого класса</div>
+<div class="quiz-option" data-index="1">Потому что аннотация @Entity не компилируется без конструктора без аргументов</div>
+<div class="quiz-option" data-index="2">Потому что без него Spring Boot не найдёт класс при сканировании компонентов</div>
+<div class="quiz-option" data-index="3">Потому что Hibernate создаёт объект сущности через рефлексию до заполнения полей, и ему нужен доступный конструктор без параметров</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 53. Что генерирует Lombok-аннотация @RequiredArgsConstructor, применённая к Spring-сервису с единственным final-полем StudentRepository repository?</h4>
+
+<div class="quiz-option" data-index="0">Сеттер setRepository(...) для внедрения через Setter Injection</div>
+<div class="quiz-option" data-index="1">Статический фабричный метод create(repository)</div>
+<div class="quiz-option" data-index="2">Конструктор с одним параметром repository — эквивалент написанного вручную конструктора для Constructor Injection</div>
+<div class="quiz-option" data-index="3">Поле помечается @Autowired, включается Field Injection</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<!-- ===== РАЗДЕЛ 7: ТРАНЗАКЦИИ И УРОВНИ ИЗОЛЯЦИИ (Вопросы 54–58) ===== -->
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 54. Какое свойство ACID отвечает за то, что параллельные транзакции не мешают друг другу?</h4>
+
+<div class="quiz-option" data-index="0">Atomicity (атомарность)</div>
+<div class="quiz-option" data-index="1">Consistency (согласованность)</div>
+<div class="quiz-option" data-index="2">Isolation (изолированность)</div>
+<div class="quiz-option" data-index="3">Durability (долговечность)</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 55. Что называют грязным чтением (dirty read)?</h4>
+
+<div class="quiz-option" data-index="0">Чтение данных, которые другая транзакция изменила, но ещё не зафиксировала</div>
+<div class="quiz-option" data-index="1">Повторное чтение одной строки, вернувшее разные значения</div>
+<div class="quiz-option" data-index="2">Появление новых строк в выборке при повторном запросе</div>
+<div class="quiz-option" data-index="3">Чтение строки, которую другая транзакция уже удалила и зафиксировала</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 56. Какой минимальный уровень изоляции гарантирует, что повторное чтение одной и той же строки внутри транзакции вернёт то же значение?</h4>
+
+<div class="quiz-option" data-index="0">READ UNCOMMITTED</div>
+<div class="quiz-option" data-index="1">READ COMMITTED</div>
+<div class="quiz-option" data-index="2">REPEATABLE READ</div>
+<div class="quiz-option" data-index="3">SERIALIZABLE</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 57. Как в JDBC задать уровень изоляции для транзакции?</h4>
+
+<div class="quiz-option" data-index="0">Передать уровень третьим параметром в DriverManager.getConnection()</div>
+<div class="quiz-option" data-index="1">Вызвать conn.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ) до начала транзакции</div>
+<div class="quiz-option" data-index="2">Вызвать statement.setIsolation("REPEATABLE READ") перед executeQuery()</div>
+<div class="quiz-option" data-index="3">Указать уровень при создании ResultSet</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 58. Что делает аннотация @Version в сущности Hibernate?</h4>
+
+<div class="quiz-option" data-index="0">Хранит номер версии схемы базы данных для миграций</div>
+<div class="quiz-option" data-index="1">Включает пессимистичную блокировку: строка блокируется сразу при чтении</div>
+<div class="quiz-option" data-index="2">Задаёт версию Hibernate, с которой совместима сущность</div>
+<div class="quiz-option" data-index="3">Включает оптимистичную блокировку: Hibernate добавляет версию в условие UPDATE и замечает конфликт</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<!-- ===== РАЗДЕЛ 8: STREAM API (Вопросы 59–63) ===== -->
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 59. Что напечатает этот код?</h4>
+
+```java
+List<String> cities = List.of("Москва", "Казань", "Сочи");
+cities.stream()
+      .peek(c -> System.out.println("peek: " + c))
+      .filter(c -> c.length() > 4);
+```
+
+<div class="quiz-option" data-index="0">Три строки: peek: Москва, peek: Казань, peek: Сочи</div>
+<div class="quiz-option" data-index="1">Ничего: без терминальной операции конвейер не запускается</div>
+<div class="quiz-option" data-index="2">Только строку «peek: Москва» — конвейер останавливается на первом элементе</div>
+<div class="quiz-option" data-index="3">Ошибку компиляции: результат конвейера не присвоен переменной</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 60. Какая из перечисленных операций Stream API является терминальной?</h4>
+
+<div class="quiz-option" data-index="0">filter(predicate)</div>
+<div class="quiz-option" data-index="1">map(function)</div>
+<div class="quiz-option" data-index="2">sorted()</div>
+<div class="quiz-option" data-index="3">collect(Collectors.toList())</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 61. Что окажется в списке result?</h4>
+
+```java
+List<List<String>> teams = List.of(
+        List.of("Анна", "Борис"),
+        List.of("Вера")
+);
+List<String> result = teams.stream()
+        .flatMap(List::stream)
+        .toList();
+```
+
+<div class="quiz-option" data-index="0">[[Анна, Борис], [Вера]] — вложенность сохранится</div>
+<div class="quiz-option" data-index="1">[Анна, Вера] — по первому элементу каждого списка</div>
+<div class="quiz-option" data-index="2">Пустой список: flatMap работает только с Optional</div>
+<div class="quiz-option" data-index="3">[Анна, Борис, Вера]</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 62. Что окажется в переменной result?</h4>
+
+```java
+List<String> empty = List.of();
+boolean result = empty.stream().allMatch(s -> s.length() > 100);
+```
+
+<div class="quiz-option" data-index="0">true</div>
+<div class="quiz-option" data-index="1">false</div>
+<div class="quiz-option" data-index="2">NoSuchElementException</div>
+<div class="quiz-option" data-index="3">Optional.empty()</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 63. Что произойдёт при выполнении этого кода?</h4>
+
+```java
+Stream<String> stream = List.of("a", "b").stream();
+stream.forEach(System.out::println);
+stream.forEach(System.out::println);
+```
+
+<div class="quiz-option" data-index="0">Оба вызова напечатают по два элемента</div>
+<div class="quiz-option" data-index="1">Второй вызов ничего не напечатает, но и ошибки не будет</div>
+<div class="quiz-option" data-index="2">Второй вызов бросит IllegalStateException: поток уже использован</div>
+<div class="quiz-option" data-index="3">Ошибка компиляции: поток нельзя присвоить переменной</div>
+<div class="quiz-feedback"></div>
+</div>
+
 <button class="quiz-btn" onclick="showScore()">Показать результат</button>
 
 <div class="quiz-score" id="quizScore">
@@ -812,7 +976,20 @@ public class Employee {
     'Вопрос 47': 'В HQL используется имя Java-класса (User), а не имя таблицы (users). Вариант C с именованным параметром :minAge — предпочтительный способ параметризации.',
     'Вопрос 48': 'В Hibernate 6 createQuery() предназначен для SELECT-запросов и возвращает типизированный результат. createMutationQuery() — для UPDATE и DELETE, возвращает количество изменённых строк.',
     'Вопрос 49': 'Criteria API позволяет строить запросы программно через Java-код (CriteriaBuilder, CriteriaQuery, Root), обеспечивая типобезопасность и обнаружение ошибок на этапе компиляции.',
-    'Вопрос 50': 'mappedBy на стороне @OneToMany указывает, что связью владеет другая сторона (Employee.department). Это предотвращает дублирование внешнего ключа. FetchType.LAZY загружает коллекцию по требованию.'
+    'Вопрос 50': 'mappedBy на стороне @OneToMany указывает, что связью владеет другая сторона (Employee.department). Это предотвращает дублирование внешнего ключа. FetchType.LAZY загружает коллекцию по требованию.',
+    'Вопрос 51': '@Data генерирует сразу всё, включая equals()/hashCode() и toString() по всем полям — а это опасно для сущности со связями (лишние SQL-запросы, LazyInitializationException). Перечисленные по отдельности @Getter, @Setter, @NoArgsConstructor, @AllArgsConstructor дают ровно геттеры/сеттеры/конструкторы и ничего лишнего.',
+    'Вопрос 52': 'Hibernate инстанцирует сущность рефлексией (обычно через Unsafe или конструктор без аргументов), а уже потом заполняет поля через рефлексию же — конструктор с параметрами тут не годится, так как значения полей ещё не считаны из ResultSet.',
+    'Вопрос 53': '@RequiredArgsConstructor генерирует конструктор по всем final-полям класса. Для Spring результат неотличим от конструктора, написанного вручную: контейнер видит единственный конструктор и внедряет через него зависимости — Constructor Injection, а не Setter или Field Injection.',
+    'Вопрос 54': 'Isolation — та самая буква, степень которой регулируется уровнем изоляции. Atomicity отвечает за принцип «всё или ничего», Consistency — за соблюдение ограничений базы, Durability — за сохранность данных после commit.',
+    'Вопрос 55': 'Грязное чтение — это чтение чужих незафиксированных изменений: если та транзакция откатится, вы приняли решение на основе данных, которых никогда не существовало. Второй и третий варианты описывают неповторяющееся и фантомное чтение.',
+    'Вопрос 56': 'Неповторяющееся чтение запрещено начиная с REPEATABLE READ. SERIALIZABLE тоже его запрещает, но он строже, чем требуется, и обходится дороже; READ COMMITTED защищает только от грязного чтения.',
+    'Вопрос 57': 'Уровень изоляции — свойство соединения: его задают методом setTransactionIsolation с константой из интерфейса Connection, причём до setAutoCommit(false) и до первого запроса. Поддержку конкретного уровня стоит проверять через DatabaseMetaData.',
+    'Вопрос 58': 'С полем @Version каждый UPDATE выполняется с условием WHERE id = ? AND version = ?. Если параллельная транзакция уже изменила строку, обновится 0 строк и коммит завершится исключением (StaleObjectStateException или OptimisticLockException) — данные нужно перечитать и повторить операцию.',
+    'Вопрос 59': 'Промежуточные операции ленивы: peek и filter лишь достраивают описание конвейера. Пока не вызвана терминальная операция (toList(), forEach(), count() и т. п.), ни один элемент через конвейер не проходит.',
+    'Вопрос 60': 'Терминальная операция возвращает не Stream, а результат (или ничего) и запускает вычисление всего конвейера. filter, map и sorted возвращают новый Stream, то есть являются промежуточными.',
+    'Вопрос 61': 'flatMap превращает каждый элемент в поток и склеивает эти потоки в один — вложенные списки «расплющиваются» в плоский. Обычный map в этой ситуации вернул бы Stream<List<String>>, а не Stream<String>.',
+    'Вопрос 62': 'На пустом потоке allMatch и noneMatch возвращают true, а anyMatch — false: утверждение обо всех элементах пустого множества опровергнуть нечем. Поэтому проверку allMatch почти всегда дополняют проверкой, что данные вообще есть.',
+    'Вопрос 63': 'Поток одноразовый: после терминальной операции он закрыт, и повторное обращение бросает IllegalStateException со словами «stream has already been operated upon or closed». Переиспользовать нужно источник или Supplier<Stream<T>>.'
   };
 
   document.querySelectorAll('.quiz-option').forEach(function(option) {

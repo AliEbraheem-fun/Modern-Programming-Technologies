@@ -2,7 +2,7 @@
 
 ## Введение
 
-Добро пожаловать на вторую лекцию курса "Современные технологии программирования". На первой лекции мы познакомились с основами Java — архитектурой JVM, типами данных и операторами. Сегодня мы перейдём к основным конструкциям языка: классам, интерфейсам, массивам, строкам и другим важным элементам, которые составляют фундамент любой Java-программы.
+Добро пожаловать на вторую лекцию курса "Современные технологии программирования". На первой лекции мы познакомились с основами Java — архитектурой JVM, типами данных и операторами. Сегодня мы перейдём к основным конструкциям языка: классам, интерфейсам, массивам, строкам и другим важным элементам, которые составляют фундамент любой Java-программы. А в конце займёмся датами и временем — тем самым java.time, без которого не обходится ни одно приложение, где что-то происходит «вчера», «через три рабочих дня» или «в московском часовом поясе».
 
 ---
 
@@ -849,6 +849,78 @@ jshell> String[] names = new String[3]
 jshell> names[0]                          // Что будет?
 jshell> arr[10]                           // А здесь?
 ```
+
+### Класс java.util.Arrays
+
+Массив в Java — это минимальный объект: у него есть только `.length` и доступ по индексу, а всё остальное (сортировка, поиск, сравнение, печать) вынесено в отдельный класс-утилиту `java.util.Arrays`. В нём собраны статические методы, которые работают с массивами так, как коллекции работают сами по себе.
+
+| Метод | Что делает |
+|-------|-----------|
+| `toString(arr)` | Строковое представление одномерного массива: `[1, 2, 3]` |
+| `deepToString(arr)` | То же самое для многомерного (вложенного) массива |
+| `sort(arr)` | Сортирует массив по возрастанию «на месте» |
+| `sort(arr, comparator)` | Сортирует массив объектов по заданному правилу |
+| `binarySearch(arr, key)` | Бинарный поиск элемента; массив обязан быть отсортирован заранее |
+| `fill(arr, value)` | Заполняет весь массив одним значением |
+| `copyOf(arr, newLength)` | Копия массива нужной длины (обрезает или дополняет нулями/`null`) |
+| `copyOfRange(arr, from, to)` | Копия подотрезка массива |
+| `equals(a, b)` | Поэлементное сравнение одномерных массивов |
+| `deepEquals(a, b)` | Поэлементное сравнение многомерных массивов |
+| `asList(arr)` | «Обёртка»-список поверх массива |
+
+**Печать массива.** Массив — это объект, поэтому `System.out.println(arr)` вызывает унаследованный от `Object` метод `toString()`, который просто печатает тип и хэш-код в духе `[I@1b6d3586` (`[I` значит «массив `int`»), а не содержимое. Чтобы увидеть сами элементы, нужен именно `Arrays`:
+
+```java
+int[] arr = {3, 1, 2};
+
+System.out.println(arr);                 // [I@1b6d3586 — бесполезно
+System.out.println(Arrays.toString(arr)); // [3, 1, 2]
+
+int[][] matrix = {{1, 2}, {3, 4}};
+System.out.println(Arrays.deepToString(matrix)); // [[1, 2], [3, 4]]
+```
+
+**Сортировка и поиск.** `binarySearch` даёт верный результат, только если массив уже отсортирован — на неотсортированном массиве он может вернуть случайный индекс:
+
+```java
+int[] numbers = {5, 3, 1, 4, 2};
+Arrays.sort(numbers);                      // numbers = [1, 2, 3, 4, 5]
+int index = Arrays.binarySearch(numbers, 4); // 3
+
+String[] names = {"Charlie", "Alice", "Bob"};
+Arrays.sort(names, Comparator.reverseOrder()); // [Charlie, Bob, Alice]
+```
+
+**Заполнение и копирование.**
+
+```java
+int[] zeros = new int[5];
+Arrays.fill(zeros, 7);                      // [7, 7, 7, 7, 7]
+
+int[] original = {1, 2, 3};
+int[] extended = Arrays.copyOf(original, 5);       // [1, 2, 3, 0, 0]
+int[] slice = Arrays.copyOfRange(original, 1, 3);  // [2, 3]
+```
+
+**Сравнение.**
+
+```java
+int[] a = {1, 2, 3};
+int[] b = {1, 2, 3};
+
+System.out.println(a == b);              // false — разные объекты в памяти
+System.out.println(Arrays.equals(a, b)); // true — одинаковое содержимое
+```
+
+**Ловушка `Arrays.asList()`.** Метод возвращает не обычный `ArrayList`, а список **фиксированного размера**, «завёрнутый» вокруг исходного массива: изменять элементы через `set()` можно, а добавлять или удалять — нельзя.
+
+```java
+List<String> list = Arrays.asList("A", "B", "C");
+list.set(0, "Z");     // OK: список = [Z, B, C]
+list.add("D");        // UnsupportedOperationException!
+```
+
+Если нужен полноценный изменяемый список, массив нужно обернуть ещё раз: `new ArrayList<>(Arrays.asList(...))`.
 
 ---
 
@@ -2006,6 +2078,36 @@ jshell> import java.time.LocalDate
 jshell> LocalDate.now()
 ```
 
+### Статический импорт
+
+Обычный `import` подтягивает **класс**, и обращаться к его членам всё равно приходится через имя класса: `Math.max(a, b)`. Статический импорт устроен иначе — он подтягивает не класс, а конкретные **статические члены** (поля и методы) этого класса, и дальше их можно писать без префикса, как будто они объявлены прямо в вашем файле.
+
+**Синтаксис:**
+```java
+import static java.lang.Math.PI;   // один конкретный статический член
+import static java.lang.Math.*;    // все статические члены класса
+```
+
+**Пример «до и после»:**
+
+```java
+// До: обычный import, имя класса на каждом вызове
+import java.lang.Math;
+
+double r = Math.max(a, b) + Math.sqrt(2) * Math.PI;
+```
+
+```java
+// После: статический импорт, имя класса больше не нужно
+import static java.lang.Math.*;
+
+double r = max(a, b) + sqrt(2) * PI;
+```
+
+Код стал короче, но за это заплачено читаемостью: глядя на `max(a, b)`, уже не сразу понятно, откуда взялся этот метод — из `Math`, из вашего собственного класса или из ещё одного статического импорта. Поэтому массовый статический импорт (`import static ...*;`) для собственного, «бизнесового» кода не рекомендуют — используйте его точечно и там, где это действительно улучшает чтение, а не превращает файл в загадку.
+
+Есть, однако, ситуация, где статический импорт — общепринятая практика, а не вольность: модульные тесты. Именно так пишут `import static org.junit.jupiter.api.Assertions.*;`, чтобы вместо `Assertions.assertEquals(...)` писать просто `assertEquals(...)`. Подробно тестирование на JUnit разбирается в Лекции 10.
+
 ---
 
 ## Часть 14: Модули
@@ -2065,6 +2167,7 @@ module lecture {
     exports lecture.two.anonymous;
     exports lecture.two.arrays;
     exports lecture.two.classes;
+    exports lecture.two.datetime;
     exports lecture.two.enums;
     exports lecture.two.interfaces;
     exports lecture.two.lambdas;
@@ -2109,6 +2212,367 @@ import javax.annotation.ParametersAreNonnullByDefault;
 ```
 
 В этом примере аннотация `@ParametersAreNonnullByDefault` применяется ко **всему пакету** `lecture.two`, что означает: все параметры методов в этом пакете по умолчанию считаются ненулевыми (non-null).
+
+---
+
+## Часть 16: Работа с датами и временем (Java Time API)
+
+Почти в любой программе рано или поздно появляются даты: дата рождения студента, срок сдачи работы, время начала пары, отметка о том, когда запись попала в базу. Java даёт для этого отдельный пакет — `java.time`, который появился в Java 8 и с тех пор считается единственным правильным способом работать со временем.
+
+### Почему старый API оказался плохим
+
+До Java 8 использовали `java.util.Date`, `java.util.Calendar` и `java.text.SimpleDateFormat`. Формально они всё ещё в JDK и компилируются, но в новом коде их применять не нужно. Причины простые.
+
+**Изменяемость (mutability).** Объект `Calendar` можно поменять из любого места: передали дату в чужой метод — и она вернулась другой.
+
+**Небезопасность в многопоточной среде.** `SimpleDateFormat` хранит промежуточное состояние разбора внутри себя. Один общий экземпляр на всё приложение — и при параллельных вызовах вы получаете перепутанные даты или исключение, причём на одном потоке это не воспроизводится.
+
+**Месяцы с нуля.** В `Calendar` январь — это 0, а декабрь — 11. Классическая ошибка на единицу, которая живёт в коде годами.
+
+**Путаница в названиях.** `Date` — это не дата, а момент времени с точностью до миллисекунды, то есть по смыслу тот же `Instant`: внутри лежит только число миллисекунд от 1970 года, никакого часового пояса там нет. Путаницу создаёт его API — `toString()` и устаревшие геттеры `getYear()`, `getMonth()`, `getHours()` печатают этот момент в часовом поясе машины, поэтому `Date` выглядит календарной датой, хотя ею не является, и одно и то же значение показывается по-разному на разных серверах.
+
+```java
+package lecture.two.datetime;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
+// Демонстрация недостатков старого API. В новом коде так писать не нужно
+public class OldApiProblems {
+
+    // Один форматтер на всё приложение — SimpleDateFormat не потокобезопасен
+    private static final SimpleDateFormat SHARED = new SimpleDateFormat("dd.MM.yyyy");
+
+    public static void main(String[] args) {
+        // Месяцы нумеруются с нуля: здесь 2 — это март, а не февраль
+        Calendar calendar = new GregorianCalendar(2026, 2, 8);
+        System.out.println("Исходная дата: " + SHARED.format(calendar.getTime()));
+
+        // Объект изменяемый — чужой метод спокойно сдвигает вашу дату
+        sneakyShift(calendar);
+        System.out.println("После вызова метода: " + SHARED.format(calendar.getTime()));
+    }
+
+    // Ничто не мешает изменить переданный объект
+    private static void sneakyShift(Calendar calendar) {
+        calendar.add(Calendar.MONTH, 1);
+    }
+}
+```
+
+Представьте старый API как кухонные весы, у которых чашка приварена к столу: любой, кто проходит мимо, может положить туда свою гирьку, и вы об этом не узнаете. `java.time` — это весы, которые печатают чек: чек нельзя подправить, можно только выбить новый.
+
+### Карта пакета java.time
+
+Ключевая идея: для каждой задачи — свой тип. Не бывает «универсальной даты», бывает дата без времени, время без даты, момент на шкале и так далее.
+
+| Класс | Что хранит | Когда применять |
+|-------|-----------|-----------------|
+| `LocalDate` | Дата без времени и без часового пояса: `2026-03-08` | Дата рождения, дата выдачи книги, срок сдачи |
+| `LocalTime` | Время суток без даты: `10:30:00` | Начало пары, время открытия магазина |
+| `LocalDateTime` | Дата и время без часового пояса: `2026-03-08T10:30` | Запись в ежедневнике, локальное расписание |
+| `ZonedDateTime` | Дата, время и полноценный часовой пояс: `2026-03-08T10:30+03:00[Europe/Moscow]` | Встреча участников из разных стран, расписание рейсов |
+| `OffsetDateTime` | Дата, время и смещение от UTC без правил перехода: `2026-03-08T10:30+03:00` | Обмен данными по REST API, поля в JSON |
+| `Instant` | Момент на шкале времени — секунды и наносекунды от 1970-01-01T00:00Z | Отметка «когда это произошло»: логи, поле `created_at` в базе |
+| `Duration` | Промежуток времени: 90 минут, 3 часа | Длительность пары, таймаут запроса |
+| `Period` | Промежуток в календарных единицах: 2 года 3 месяца 5 дней | Возраст, срок обучения |
+| `Year`, `YearMonth`, `MonthDay` | Часть даты | Год выпуска, месяц отчёта, «8 марта» без года |
+| `DayOfWeek`, `Month` | Перечисления дней недели и месяцев | Проверки «это выходной?», подписи в интерфейсе |
+
+Аналогия. Представьте набор приборов на стене диспетчерской. `LocalDate` — отрывной календарь: он показывает число, но ничего не знает про время. `LocalTime` — наручные часы без даты. `LocalDateTime` — страница ежедневника: «8 марта, 10:30» — понятно, но непонятно, в каком городе. `ZonedDateTime` — табло вылетов, где рядом с временем всегда указан город. А `Instant` — это счётчик, который щёлкает секунды с 1970 года и вообще не интересуется, где вы находитесь: одно и то же значение для Москвы, Токио и Лондона.
+
+### Создание объектов: now, of, parse
+
+У всех классов пакета один и тот же набор фабричных методов. Обычных конструкторов нет — только статические методы.
+
+```java
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+
+// now() — «сколько сейчас» по системным часам и системному часовому поясу
+LocalDate today = LocalDate.now();
+LocalTime currentTime = LocalTime.now();
+LocalDateTime currentMoment = LocalDateTime.now();
+
+// of() — собираем из частей. Месяцы нумеруются с 1, а не с 0
+LocalDate examDay = LocalDate.of(2026, 6, 15);          // 2026-06-15
+LocalDate womensDay = LocalDate.of(2026, Month.MARCH, 8); // 2026-03-08
+LocalTime lectureStart = LocalTime.of(10, 30);           // 10:30
+LocalDateTime lecture = LocalDateTime.of(examDay, lectureStart); // 2026-06-15T10:30
+
+// parse() — разбор строки в формате ISO-8601, без дополнительных настроек
+LocalDate parsedDate = LocalDate.parse("2026-09-01");
+LocalDateTime parsedMoment = LocalDateTime.parse("2026-09-01T09:00:00");
+```
+
+Если строка не подходит под ожидаемый формат, `parse()` бросает `DateTimeParseException` — это непроверяемое исключение, наследник `RuntimeException`.
+
+### Извлечение частей, DayOfWeek и Month
+
+```java
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.Month;
+
+LocalDate date = LocalDate.of(2026, Month.MARCH, 8);
+
+date.getYear();        // 2026
+date.getMonthValue();  // 3
+date.getMonth();       // MARCH — это enum, а не число
+date.getDayOfMonth();  // 8
+date.getDayOfWeek();   // SUNDAY
+date.getDayOfYear();   // 67
+date.lengthOfMonth();  // 31
+date.isLeapYear();     // false
+
+// DayOfWeek и Month — обычные enum, значит, работают в switch
+DayOfWeek day = date.getDayOfWeek();
+String kind = switch (day) {
+    case SATURDAY, SUNDAY -> "выходной";
+    default -> "рабочий день";
+};
+
+// У самих перечислений тоже есть полезные методы
+day.plus(3);                // WEDNESDAY
+Month.MARCH.length(false);  // 31 (аргумент — «високосный ли год»)
+```
+
+### Арифметика и неизменяемость
+
+Все объекты `java.time` **неизменяемы (immutable)**. Метод `plusDays()` не двигает вашу дату — он возвращает новый объект, а старый остаётся прежним. Отсюда два практических следствия: результат обязательно нужно присвоить, и такие объекты безопасно передавать в любые методы и потоки.
+
+```java
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
+LocalDate date = LocalDate.of(2026, 3, 8);
+
+// Прибавление и вычитание — всегда новый объект
+LocalDate inTenDays = date.plusDays(10);   // 2026-03-18
+LocalDate monthAgo = date.minusMonths(1);  // 2026-02-08
+
+// Классическая ошибка: результат выброшен, исходная дата не изменилась
+date.plusYears(100);
+System.out.println(date);                  // по-прежнему 2026-03-08
+
+// with... — заменить одну составляющую
+LocalDate firstDay = date.withDayOfMonth(1);                    // 2026-03-01
+LocalDate lastDay = date.withDayOfMonth(date.lengthOfMonth());  // 2026-03-31
+
+// Универсальная форма прибавления через ChronoUnit
+LocalDateTime deadline = LocalDateTime.of(2026, 6, 1, 9, 0)
+        .plus(36, ChronoUnit.HOURS);       // 2026-06-02T21:00
+
+// Java сама следит за корректностью: «31 февраля» не появится
+LocalDate.of(2026, 1, 31).plusMonths(1);   // 2026-02-28
+```
+
+### Сравнение дат
+
+```java
+LocalDate start = LocalDate.of(2026, 2, 1);
+LocalDate end = LocalDate.of(2026, 6, 15);
+
+start.isBefore(end);   // true  — start раньше end
+start.isAfter(end);    // false — start не позже end
+start.isEqual(end);    // false — это разные календарные даты
+start.compareTo(end);  // отрицательное число — годится для сортировки
+```
+
+`isEqual()` сравнивает календарную дату, `equals()` — ещё и тип объекта. Для `LocalDate` они совпадают, а вот для `ZonedDateTime` разница есть: два одинаковых момента, записанных в разных поясах, дают `isEqual() == true`, но `equals() == false`. Классы дат и времени — `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, `Instant`, а из промежутков `Duration` — реализуют `Comparable`, поэтому список дат сортируется обычным `Collections.sort(dates)`. Исключение — `Period`: периоды нельзя сравнить напрямую, потому что «1 месяц» и «30 дней» несопоставимы без конкретной даты.
+
+### Duration, Period и ChronoUnit
+
+Разница между двумя моментами измеряется по-разному, и в Java для этого есть три инструмента.
+
+- **`Duration`** — «машинное» время: часы, минуты, секунды, наносекунды. Работает с `LocalTime`, `LocalDateTime`, `Instant`.
+- **`Period`** — «человеческое» время: годы, месяцы, дни. Работает с `LocalDate`.
+- **`ChronoUnit`** — перечисление единиц, которое умеет считать разницу одним числом.
+
+```java
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+
+LocalDate birthday = LocalDate.of(2005, 9, 1);
+LocalDate today = LocalDate.of(2026, 3, 8);
+
+// Period — раскладка по календарным единицам
+Period age = Period.between(birthday, today);
+System.out.printf("Возраст: %d лет, %d месяцев, %d дней%n",
+        age.getYears(), age.getMonths(), age.getDays()); // 20 лет, 6 месяцев, 7 дней
+
+// ChronoUnit — одно число в выбранных единицах
+ChronoUnit.DAYS.between(birthday, today);    // 7493
+ChronoUnit.MONTHS.between(birthday, today);  // 246
+
+// Duration — длительность в часах, минутах, секундах
+Duration lecture = Duration.between(LocalTime.of(10, 30), LocalTime.of(12, 5));
+lecture.toMinutes();      // 95
+lecture.toHoursPart();    // 1
+lecture.toMinutesPart();  // 35
+
+// Оба класса можно создавать напрямую и прибавлять к датам
+today.plus(Period.ofMonths(5));       // 2026-08-08
+Duration.ofSeconds(30).toMillis();    // 30000
+```
+
+Частая ошибка — считать возраст через `ChronoUnit.YEARS` там, где нужен `Period`, и наоборот. Правило простое: если результат показывают человеку («20 лет 6 месяцев») — `Period`; если результат идёт в вычисления («сколько всего дней прошло») — `ChronoUnit`.
+
+### TemporalAdjusters — «умные» сдвиги дат
+
+Задачи вроде «первый понедельник месяца» или «последний рабочий день квартала» руками решаются циклом. В `java.time` для них есть готовые корректировщики в классе `TemporalAdjusters`.
+
+```java
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
+
+LocalDate date = LocalDate.of(2026, 3, 8); // воскресенье
+
+date.with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY));  // 2026-03-02
+date.with(TemporalAdjusters.lastDayOfMonth());                // 2026-03-31
+date.with(TemporalAdjusters.firstDayOfNextMonth());           // 2026-04-01
+date.with(TemporalAdjusters.next(DayOfWeek.FRIDAY));          // 2026-03-13
+date.with(TemporalAdjusters.dayOfWeekInMonth(2, DayOfWeek.TUESDAY)); // 2026-03-10
+
+// TemporalAdjuster — функциональный интерфейс, значит, можно написать свой
+TemporalAdjuster nextWorkingDay = temporal -> {
+    LocalDate current = LocalDate.from(temporal);
+    return switch (current.getDayOfWeek()) {
+        case FRIDAY -> current.plusDays(3);   // с пятницы — сразу на понедельник
+        case SATURDAY -> current.plusDays(2);
+        default -> current.plusDays(1);
+    };
+};
+
+LocalDate.of(2026, 3, 13).with(nextWorkingDay); // 2026-03-16
+```
+
+### Форматирование и разбор: DateTimeFormatter
+
+`toString()` у классов `java.time` всегда выдаёт формат ISO-8601 (`2026-03-08`). Для человека нужен другой вид — за это отвечает `DateTimeFormatter`. В отличие от `SimpleDateFormat` он **неизменяем и потокобезопасен**, поэтому один экземпляр можно спокойно держать в `static final`-поле.
+
+```java
+package lecture.two.datetime;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.Locale;
+
+public class Formatting {
+
+    // Неизменяемый и потокобезопасный — можно один на всё приложение
+    private static final DateTimeFormatter RU_DATE_TIME =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
+    public static void main(String[] args) {
+        LocalDateTime moment = LocalDateTime.of(2026, 3, 8, 14, 30);
+        LocalDate date = LocalDate.of(2026, 3, 8);
+        Locale ru = Locale.forLanguageTag("ru");
+
+        // Форматирование: объект -> строка
+        System.out.println(moment.format(RU_DATE_TIME));                    // 08.03.2026 14:30
+        // Разбор: строка -> объект, тем же форматтером
+        System.out.println(LocalDateTime.parse("08.03.2026 14:30", RU_DATE_TIME));
+
+        // Локаль задаёт названия месяцев и дней недели
+        System.out.println(date.format(DateTimeFormatter.ofPattern("d MMMM yyyy", ru)));
+
+        // Готовый локализованный стиль — формат выбирает сама платформа
+        System.out.println(date.format(DateTimeFormatter
+                .ofLocalizedDate(FormatStyle.LONG).withLocale(ru)));
+
+        // Встроенный ISO-формат — то, что стоит писать в файлы и передавать по сети
+        System.out.println(date.format(DateTimeFormatter.ISO_LOCAL_DATE)); // 2026-03-08
+    }
+}
+```
+
+Основные буквы шаблона:
+
+| Буква | Значение | Пример |
+|-------|----------|--------|
+| `y` | Год | `yyyy` → `2026` |
+| `M` | Месяц | `MM` → `03`, `MMMM` → `марта` |
+| `d` | День месяца | `dd` → `08` |
+| `E` | День недели | `EEEE` → `воскресенье` |
+| `H` / `h` | Час 0–23 / час 1–12 | `HH` → `14`, `hh` → `02` |
+| `m` / `s` | Минуты / секунды | `mm` → `30`, `ss` → `00` |
+| `a` | AM/PM | `a` → `PM` |
+| `z` / `Z` | Название пояса / смещение | `z` → `MSK`, `Z` → `+0300` |
+
+Две ловушки, на которых спотыкаются почти все. Первая: `MM` — это месяцы, `mm` — минуты; перепутать легко, а ошибка проявится только в логах. Вторая: `YYYY` (заглавные) — это не обычный год, а «год недели» по стандарту ISO, и в последних числах декабря он отличается от `yyyy` на единицу; для обычной даты всегда пишите `yyyy`. И отдельно про русский язык: `MMMM` в шаблоне даёт форму «марта» (она нужна в связке «8 марта»), а название месяца само по себе получают через `Month.MARCH.getDisplayName(TextStyle.FULL_STANDALONE, ru)` — это «март».
+
+### Часовые пояса: ZoneId, ZonedDateTime и Instant
+
+`LocalDateTime` не знает про часовые пояса. Запись «8 марта, 14:30» одинаково верна для Москвы и Токио, но это разные моменты времени. Чтобы получить конкретный момент, нужен часовой пояс — `ZoneId`.
+
+```java
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
+ZoneId moscow = ZoneId.of("Europe/Moscow");
+ZoneId tokyo = ZoneId.of("Asia/Tokyo");
+
+// Локальное время + пояс = конкретный момент
+LocalDateTime local = LocalDateTime.of(2026, 3, 8, 14, 0);
+ZonedDateTime inMoscow = ZonedDateTime.of(local, moscow);
+// 2026-03-08T14:00+03:00[Europe/Moscow]
+
+// Тот же самый момент, показанный по токийским часам
+ZonedDateTime inTokyo = inMoscow.withZoneSameInstant(tokyo);
+// 2026-03-08T20:00+09:00[Asia/Tokyo]
+
+inMoscow.isEqual(inTokyo);   // true — это один и тот же момент времени
+
+// Instant — момент без «названия города», только точка на шкале
+Instant instant = inMoscow.toInstant();   // 2026-03-08T11:00:00Z
+
+// И обратно: момент -> локальное представление в нужном поясе
+ZonedDateTime restored = instant.atZone(moscow);
+
+// OffsetDateTime — смещение без правил перехода на летнее время
+OffsetDateTime offsetDateTime = inMoscow.toOffsetDateTime(); // 2026-03-08T14:00+03:00
+```
+
+Разница между `ZonedDateTime` и `OffsetDateTime` тонкая, но важная. `+03:00` — это просто число, а `Europe/Moscow` — это правило: смещение, история его изменений и переходы на летнее время, если они есть. Для встречи, которая состоится через полгода, нужен `ZoneId`: если страна за это время переведёт стрелки, `ZonedDateTime` посчитает верно, а зафиксированное смещение — нет.
+
+**Почему в базу данных кладут `Instant`.** Пользователи сидят в разных поясах, сервер может переехать в другой дата-центр, а правила перехода на летнее время страны меняют законом. Если хранить «14:30» без пояса, потом уже не восстановить, что это был за момент. `Instant` (или колонка `TIMESTAMP WITH TIME ZONE`) хранит саму точку на шкале времени, а перевод в местное время делается на границе — при показе пользователю. ORM-фреймворки (в том числе Hibernate, с которым мы познакомимся в Лекции 6) отображают поле типа `Instant` на такую колонку без дополнительных настроек — отдельный конвертер писать не нужно.
+
+Аналогия: `Instant` — это как фотография с показаниями секундомера. Она одна для всех. А `ZonedDateTime` — подпись под фотографией на нужном языке: «в Москве было два часа дня, а в Токио — восемь вечера». Хранить надо фотографию, а подписи делать по месту.
+
+### Попробуй в jshell!
+
+```
+jshell> import java.time.*
+jshell> import java.time.format.*
+jshell> import java.time.temporal.*
+jshell> var date = LocalDate.of(2026, Month.MARCH, 8)
+jshell> date.getDayOfWeek()
+jshell> date.plusDays(10)
+jshell> date
+jshell> date.with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY))
+jshell> Period.between(LocalDate.of(2005, 9, 1), date)
+jshell> ChronoUnit.DAYS.between(LocalDate.of(2005, 9, 1), date)
+jshell> Duration.between(LocalTime.of(10, 30), LocalTime.of(12, 5)).toMinutes()
+jshell> date.format(DateTimeFormatter.ofPattern("d MMMM yyyy", java.util.Locale.forLanguageTag("ru")))
+jshell> var msk = ZonedDateTime.of(date.atTime(14, 0), ZoneId.of("Europe/Moscow"))
+jshell> msk.withZoneSameInstant(ZoneId.of("Asia/Tokyo"))
+jshell> msk.toInstant()
+```
 
 ---
 
@@ -2195,6 +2659,31 @@ System.out.println(s);
 <b>Predicate&lt;T&gt;</b> — его единственный абстрактный метод <code>test(T t)</code> возвращает <code>boolean</code>. Пример: <code>Predicate&lt;String&gt; isLong = s -> s.length() > 10;</code>
 </details>
 
+**Вопрос 12:** Что выведет код?
+```java
+LocalDate date = LocalDate.of(2026, 3, 8);
+date.plusYears(1);
+System.out.println(date);
+```
+<details>
+<summary>Ответ</summary>
+Выведет <b>2026-03-08</b> (без изменений). Все объекты <code>java.time</code> неизменяемы (immutable): <code>plusYears()</code> не меняет исходную дату, а возвращает новый объект. Результат нужно присвоить: <code>date = date.plusYears(1);</code> Это та же ловушка, что и с методами <code>String</code>.
+</details>
+
+**Вопрос 13:** В чём разница между `Period` и `Duration`?
+<details>
+<summary>Ответ</summary>
+<b>Period</b> измеряет промежуток в календарных единицах — годах, месяцах и днях, и работает с <code>LocalDate</code>. Подходит для возраста и стажа.<br>
+<b>Duration</b> измеряет промежуток в часах, минутах, секундах и наносекундах, и работает с <code>LocalTime</code>, <code>LocalDateTime</code> и <code>Instant</code>. Подходит для длительности операции и таймаутов.
+</details>
+
+**Вопрос 14:** Почему момент времени в базе данных обычно хранят как `Instant`, а не как `LocalDateTime`?
+<details>
+<summary>Ответ</summary>
+<code>LocalDateTime</code> не содержит часового пояса, поэтому по значению «14:30» невозможно восстановить, какой это был момент на самом деле: сервер может переехать в другой пояс, а правила перехода на летнее время меняются законом.<br>
+<code>Instant</code> — это точка на шкале времени, одинаковая для всех наблюдателей. Перевод в местное время делают только при показе пользователю через <code>instant.atZone(zoneId)</code>.
+</details>
+
 ---
 
 ## Заключение
@@ -2224,6 +2713,8 @@ System.out.println(s);
 11. **Лямбда-выражения и ссылки на методы** — компактный способ реализации функциональных интерфейсов
 
 12. **Пакеты и модули** — механизмы организации и инкапсуляции кода
+
+13. **Работа с датами и временем (`java.time`)** — отдельный неизменяемый тип под каждую задачу: `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, `Instant`. Результат `plus`/`minus`/`with` обязательно присваивают. Промежутки — `Period` (календарные единицы) и `Duration` (часы, минуты, секунды), разница одним числом — `ChronoUnit`. Форматирование — потокобезопасный `DateTimeFormatter`, хранение моментов — `Instant`
 
 ---
 

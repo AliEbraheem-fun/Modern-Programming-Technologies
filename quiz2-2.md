@@ -1088,6 +1088,98 @@ System.out.println(names);
 <div class="quiz-feedback"></div>
 </div>
 
+<!-- ===== ВОПРОСЫ 96-105: ДАТЫ И ВРЕМЯ (JAVA.TIME) ===== -->
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 96. Что произойдёт, если вызвать <code>date.plusDays(10)</code> и не присвоить результат обратно в переменную?</h4>
+<div class="quiz-option" data-index="0">Изменяет объект date и возвращает ссылку на него же</div>
+<div class="quiz-option" data-index="1">Бросает исключение UnsupportedOperationException</div>
+<div class="quiz-option" data-index="2">Ничего не делает, потому что дни можно прибавлять только через withDayOfMonth</div>
+<div class="quiz-option" data-index="3">Создаёт и возвращает новый объект LocalDate, а исходный date остаётся без изменений</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 97. В чём принципиальное отличие <code>LocalDateTime</code> от <code>ZonedDateTime</code>?</h4>
+<div class="quiz-option" data-index="0">LocalDateTime не знает про часовой пояс, поэтому не определяет конкретный момент времени; ZonedDateTime добавляет ZoneId и указывает на реальный момент</div>
+<div class="quiz-option" data-index="1">LocalDateTime хранит только дату, а ZonedDateTime — только время</div>
+<div class="quiz-option" data-index="2">Это два названия одного и того же класса, оставленные для совместимости</div>
+<div class="quiz-option" data-index="3">ZonedDateTime нельзя сравнивать через isBefore() и isAfter()</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 98. Какой класс java.time хранит момент как секунды и наносекунды от 1970-01-01T00:00Z и вообще не содержит информации о часовом поясе?</h4>
+<div class="quiz-option" data-index="0">LocalDateTime</div>
+<div class="quiz-option" data-index="1">Instant</div>
+<div class="quiz-option" data-index="2">ZonedDateTime</div>
+<div class="quiz-option" data-index="3">OffsetDateTime</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 99. С какими классами работает <code>Period</code>, а с какими — <code>Duration</code>?</h4>
+<div class="quiz-option" data-index="0">Period и Duration взаимозаменяемы для любых временных типов</div>
+<div class="quiz-option" data-index="1">Period работает только с Instant, Duration — только с ZonedDateTime</div>
+<div class="quiz-option" data-index="2">Period — с LocalDate, измеряет годы, месяцы и дни; Duration — с LocalTime, LocalDateTime и Instant, измеряет часы, минуты и секунды</div>
+<div class="quiz-option" data-index="3">Period измеряет секунды, а Duration — календарные месяцы</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="0">
+<h4>Вопрос 100. Что именно вычисляет <code>ChronoUnit.DAYS.between(birthDate, today)</code>?</h4>
+<div class="quiz-option" data-index="0">Общее количество дней между двумя датами одним числом, без разбивки на годы и месяцы</div>
+<div class="quiz-option" data-index="1">Число полных месяцев между датами</div>
+<div class="quiz-option" data-index="2">Возраст в формате «20 лет 6 месяцев»</div>
+<div class="quiz-option" data-index="3">День недели даты today</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 101. Для чего в java.time нужен класс <code>TemporalAdjusters</code>?</h4>
+<div class="quiz-option" data-index="0">Для перевода даты и времени между часовыми поясами</div>
+<div class="quiz-option" data-index="1">Для форматирования даты в строку по шаблону</div>
+<div class="quiz-option" data-index="2">Для потокобезопасного разбора строк в дату</div>
+<div class="quiz-option" data-index="3">Для готовых «умных» сдвигов дат — например, «первый понедельник месяца» или «последний день месяца» — без ручных циклов</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 102. В шаблоне <code>DateTimeFormatter.ofPattern()</code> перепутали буквы <code>MM</code> и <code>mm</code>. Что произойдёт?</h4>
+<div class="quiz-option" data-index="0">Ничего, обе буквы означают одно и то же — месяц</div>
+<div class="quiz-option" data-index="1">MM отвечает за месяц, а mm — за минуты; при перепутывании дата отформатируется неверно, но ошибка не будет заметна сразу, только по неправильному значению в выводе</div>
+<div class="quiz-option" data-index="2">Компилятор не даст скомпилировать такой код</div>
+<div class="quiz-option" data-index="3">Программа сразу бросит DateTimeParseException при запуске</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="2">
+<h4>Вопрос 103. Почему <code>DateTimeFormatter</code> можно спокойно держать в поле <code>static final</code> и использовать из нескольких потоков, а <code>SimpleDateFormat</code> — нельзя?</h4>
+<div class="quiz-option" data-index="0">DateTimeFormatter быстрее работает, но тоже не потокобезопасен</div>
+<div class="quiz-option" data-index="1">Разницы нет, оба класса можно свободно использовать в static final</div>
+<div class="quiz-option" data-index="2">DateTimeFormatter неизменяем (immutable) и потокобезопасен по конструкции; SimpleDateFormat хранит промежуточное состояние разбора внутри себя, и параллельные вызовы портят это состояние</div>
+<div class="quiz-option" data-index="3">SimpleDateFormat можно безопасно использовать из нескольких потоков, если синхронизировать метод main</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="3">
+<h4>Вопрос 104. Почему момент времени в базе данных обычно хранят как <code>Instant</code>, а не как <code>LocalDateTime</code>?</h4>
+<div class="quiz-option" data-index="0">Instant занимает меньше места в памяти, и только это имеет значение</div>
+<div class="quiz-option" data-index="1">LocalDateTime сам умеет определять часовой пояс сервера, поэтому Instant не нужен</div>
+<div class="quiz-option" data-index="2">Instant нельзя сохранить в колонку TIMESTAMP, поэтому его не используют в реальных проектах</div>
+<div class="quiz-option" data-index="3">LocalDateTime не хранит часовой пояс, поэтому по значению «14:30» нельзя восстановить, какой момент имелся в виду; Instant — точка на шкале времени, одинаковая для всех наблюдателей</div>
+<div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz-question" data-correct="1">
+<h4>Вопрос 105. Строка <code>"2026-03-08 14:00"</code> не подходит под шаблон <code>"dd.MM.yyyy HH:mm"</code>. Что произойдёт при вызове <code>LocalDateTime.parse(text, formatter)</code>?</h4>
+<div class="quiz-option" data-index="0">Метод молча вернёт null</div>
+<div class="quiz-option" data-index="1">Будет выброшено непроверяемое исключение DateTimeParseException, которое можно поймать в try-catch</div>
+<div class="quiz-option" data-index="2">Java автоматически подберёт формат по содержимому строки</div>
+<div class="quiz-option" data-index="3">Программа зависнет в бесконечном цикле разбора</div>
+<div class="quiz-feedback"></div>
+</div>
+
 <button class="quiz-btn" onclick="showScore()">Показать результат</button>
 
 <div class="quiz-score" id="quizScore">
@@ -1195,7 +1287,17 @@ System.out.println(names);
     'Вопрос 92': 'startsWith("He") проверяет, начинается ли строка с "He". "Hello" начинается с "He" → true.',
     'Вопрос 93': 'Массив типа Animal[] допустим — он хранит ссылки. Элементами могут быть объекты подклассов (Dog, Bird).',
     'Вопрос 94': 'sort с компаратором через лямбду сортирует список по алфавиту без учёта регистра.',
-    'Вопрос 95': 'method.getAnnotation(Info.class) возвращает объект аннотации. isAnnotationPresent() проверяет наличие.'
+    'Вопрос 95': 'method.getAnnotation(Info.class) возвращает объект аннотации. isAnnotationPresent() проверяет наличие.',
+    'Вопрос 96': 'Все объекты java.time неизменяемы (immutable): plusDays() не трогает исходный объект, а возвращает новый. Результат обязательно нужно присвоить: date = date.plusDays(10).',
+    'Вопрос 97': '"8 марта, 14:30" одинаково верно и для Москвы, и для Токио — LocalDateTime не различает эти случаи. ZonedDateTime добавляет часовой пояс и превращает запись в конкретный момент времени.',
+    'Вопрос 98': 'Instant — это точка на шкале времени: число секунд и наносекунд от начала эпохи. Он не хранит ни города, ни смещения — одно и то же значение одинаково для Москвы, Токио и Лондона.',
+    'Вопрос 99': 'Period — «человеческое» время в календарных единицах (годы, месяцы, дни), работает с LocalDate. Duration — «машинное» время (часы, минуты, секунды, наносекунды), работает с LocalTime, LocalDateTime и Instant.',
+    'Вопрос 100': 'ChronoUnit считает разницу одним числом в выбранных единицах. Если нужен результат для показа человеку («20 лет 6 месяцев»), берут Period; если результат идёт в вычисления («сколько всего дней прошло») — ChronoUnit.',
+    'Вопрос 101': 'TemporalAdjusters даёт готовые корректировщики вроде firstInMonth() и lastDayOfMonth(), которые применяются через date.with(...). TemporalAdjuster — функциональный интерфейс, поэтому можно написать и свой.',
+    'Вопрос 102': 'Это одна из двух главных ловушек шаблонов DateTimeFormatter: MM (заглавные) — месяц, mm (строчные) — минуты. Перепутать легко, а ошибка проявится только в неверном выводе, а не в исключении при компиляции или запуске.',
+    'Вопрос 103': 'SimpleDateFormat хранит промежуточное состояние разбора внутри объекта: один общий экземпляр на приложение при параллельных вызовах даёт перепутанные даты или исключение. DateTimeFormatter неизменяем, поэтому один экземпляр безопасно делят все потоки.',
+    'Вопрос 104': 'Пользователи сидят в разных поясах, сервер может переехать в другой дата-центр, а правила перехода на летнее время меняются законом. Instant хранит саму точку на шкале, а перевод в местное время делают на границе — при показе пользователю.',
+    'Вопрос 105': 'Если строка не подходит под ожидаемый формат, parse() бросает DateTimeParseException — это непроверяемое исключение, наследник RuntimeException, которое нужно ловить явно, если разбор может не удаться.'
   };
 
   document.querySelectorAll('.quiz-option').forEach(function(option) {

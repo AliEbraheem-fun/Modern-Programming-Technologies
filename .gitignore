@@ -24,3 +24,6 @@ exam/.password
 exam/README.md
 exam/scrub_callback.py
 exam/replacements.txt
+
+# Local snapshots/archives of the repo — may bundle teacher-only exam files
+*.zip

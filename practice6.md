@@ -1,4 +1,4 @@
-# Практическое занятие 6: Системы сборки, JDBC и Hibernate
+# Практическое занятие 6: Системы сборки, JDBC, Hibernate, Stream API и транзакции
 
 ## Часть 1: Maven — настройка проекта
 
@@ -335,6 +335,25 @@ public class Movie {
 }
 ```
 
+### Задание 3.2.1: Сокращаем шаблонный код через Lombok
+
+Добавьте в `pom.xml` зависимость Lombok:
+
+```xml
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <version>1.18.34</version>
+    <scope>provided</scope>
+</dependency>
+```
+
+Если работаете в IntelliJ IDEA, убедитесь, что установлен плагин Lombok и в настройках (`Settings → Build, Execution, Deployment → Compiler → Annotation Processors`) включена опция *Enable annotation processing* — без неё IDE будет подчёркивать красным вызовы геттеров и сеттеров, которых «не видит» в исходном коде.
+
+Перепишите `Movie` из Задания 3.2, заменив геттеры, сеттеры, конструкторы и `toString()` аннотациями `@Getter`, `@Setter`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@ToString`. Запустите программу из Задания 3.3 без единой правки в ней самой — она должна продолжать работать: Hibernate и вызывающий код обращаются к тем же методам `getTitle()`, `setYear(...)`, только теперь эти методы дописывает Lombok при компиляции, а не вы руками.
+
+**Ответьте письменно:** (1) Сколько строк кода исчезло из класса `Movie`? (2) Почему `@NoArgsConstructor` обязателен именно для JPA-сущностей, а не просто удобен? (3) Почему на entity-классах с аннотацией `@Entity` не рекомендуется вешать `@Data` целиком, а стоит явно перечислять `@Getter`/`@Setter`/`@NoArgsConstructor`/`@AllArgsConstructor` по отдельности?
+
 ---
 
 ### Задание 3.3: Работа с Hibernate
@@ -469,7 +488,7 @@ public class HibernateMain {
 
 ---
 
-## Часть 4: Дополнительные задания
+## Часть 4: Транзакции и уровни изоляции
 
 ### Задание 4.1: Транзакции в JDBC
 
@@ -485,9 +504,130 @@ public class HibernateMain {
    - В блоке `finally` верните `conn.setAutoCommit(true)`.
 4. Протестируйте: корректный перевод, перевод при недостатке средств.
 
+5. **Уровни изоляции.** Откройте к той же базе **два** соединения (`conn1` и `conn2`) и воспроизведите две аномалии из лекции. Уровень изоляции задавайте до `setAutoCommit(false)`.
+
+   - **Грязное чтение.** Установите `conn2.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED)`. В `conn1` начните транзакцию, выполните `UPDATE accounts SET balance = 5000 WHERE id = 1` и НЕ делайте `commit()`. Прочитайте баланс из `conn2` — вы увидите незафиксированные 5000. Затем выполните в `conn1` `rollback()` и прочитайте баланс из `conn2` ещё раз.
+   - **Неповторяющееся чтение.** Установите `conn1.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)`, начните в нём транзакцию и прочитайте баланс. Из `conn2` (в режиме автокоммита) выполните `UPDATE accounts SET balance = 800 WHERE id = 1`. Прочитайте баланс в `conn1` повторно. Повторите тот же сценарий с `TRANSACTION_REPEATABLE_READ`.
+
+   Каркас для эксперимента:
+
+   ```java
+   String url = "jdbc:h2:mem:bankdb;DB_CLOSE_DELAY=-1";
+   try (Connection conn1 = DriverManager.getConnection(url, "sa", "");
+        Connection conn2 = DriverManager.getConnection(url, "sa", "")) {
+
+       System.out.println("Уровень по умолчанию: " + conn1.getTransactionIsolation());
+       System.out.println("Поддержка READ UNCOMMITTED: " + conn1.getMetaData()
+               .supportsTransactionIsolationLevel(Connection.TRANSACTION_READ_UNCOMMITTED));
+
+       conn2.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+       conn1.setAutoCommit(false);
+       // ... UPDATE в conn1 без commit, затем SELECT в conn2 ...
+   }
+   ```
+
+**Ответьте письменно:** (1) какие значения вернули оба чтения в каждом сценарии? (2) почему при READ COMMITTED повторное чтение дало другое число, а при REPEATABLE READ — прежнее? (3) какой уровень изоляции у H2 по умолчанию и как вы это проверили?
+
 ---
 
-### Задание 4.2: Пагинация в Hibernate
+## Часть 5: Stream API — обработка данных
+
+### Задание 5.1: Фильтрация, сортировка, сборка
+
+Создайте класс `FilmStreams` и запустите готовую часть кода. Затем выполните пункты, помеченные `TODO`.
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class FilmStreams {
+
+    record Film(String title, String genre, int year, double rating) {}
+
+    static final List<Film> FILMS = List.of(
+        new Film("Матрица",       "Фантастика", 1999, 8.5),
+        new Film("Начало",        "Фантастика", 2010, 8.7),
+        new Film("Интерстеллар",  "Фантастика", 2014, 8.6),
+        new Film("Тёмный рыцарь", "Боевик",     2008, 9.0),
+        new Film("Джокер",        "Драма",      2019, 8.4),
+        new Film("Паразиты",      "Триллер",    2019, 8.5),
+        new Film("Зелёная миля",  "Драма",      1999, 9.1),
+        new Film("Мементо",       "Триллер",    2000, 8.4)
+    );
+
+    public static void main(String[] args) {
+        // Готовый пример: фильтрация -> сортировка -> преобразование -> сборка
+        List<String> modern = FILMS.stream()
+                .filter(f -> f.year() >= 2000)
+                .sorted(Comparator.comparingDouble(Film::rating).reversed())
+                .map(Film::title)
+                .toList();
+        System.out.println("2000-й и новее, по убыванию рейтинга: " + modern);
+
+        // TODO 1: сколько фильмов вышло до 2010 года (filter + count)
+        // TODO 2: первый фильм с рейтингом выше 9.0; если такого нет — напечатать
+        //         "не найден" (filter + findFirst + Optional.map + orElse)
+        // TODO 3: у всех ли фильмов непустое название (allMatch)
+        // TODO 4: три самых свежих фильма (sorted + limit)
+        // TODO 5: все жанры без повторов, по алфавиту (map + distinct + sorted)
+    }
+}
+```
+
+**Ответьте письменно:** (1) что напечатает программа, если убрать из конвейера `.toList()` и просто вызвать `FILMS.stream().filter(...).map(...)`? Почему? (2) что вернёт `allMatch` на пустом списке и почему?
+
+---
+
+### Задание 5.2: Группировка и агрегирование
+
+Допишите в `FilmStreams` следующие вычисления (каждое — одним конвейером).
+
+```java
+// Готовый пример: сколько фильмов в каждом жанре
+Map<String, Long> countByGenre = FILMS.stream()
+        .collect(Collectors.groupingBy(Film::genre, Collectors.counting()));
+System.out.println("Фильмов по жанрам: " + countByGenre);
+
+// TODO 1: средний рейтинг по жанрам (groupingBy + averagingDouble)
+// TODO 2: названия фильмов по жанрам (groupingBy + mapping + toList)
+// TODO 3: лучший фильм каждого жанра (groupingBy + maxBy)
+// TODO 4: то же, что countByGenre, но ключи отсортированы —
+//         третьим аргументом передайте TreeMap::new
+// TODO 5: разделите фильмы на «до 2010» и «2010 и новее» через partitioningBy
+```
+
+**Ответьте письменно:** (1) какой тип `Map` возвращает `groupingBy` без третьего аргумента и почему порядок ключей при печати не совпадает с порядком в списке `FILMS`? (2) чем `partitioningBy` отличается от `groupingBy` с булевым ключом?
+
+---
+
+### Задание 5.3: Статистика и данные из базы
+
+```java
+// Готовый пример: статистика по годам за один проход
+IntSummaryStatistics years = FILMS.stream()
+        .mapToInt(Film::year)
+        .summaryStatistics();
+System.out.printf("Фильмов: %d, самый старый: %d, самый новый: %d, средний год: %.1f%n",
+        years.getCount(), years.getMin(), years.getMax(), years.getAverage());
+
+// TODO 1: DoubleSummaryStatistics по рейтингам; вывести минимум, максимум, среднее
+// TODO 2: сумма всех лет через mapToInt(...).sum() — и объясните, зачем нужен
+//         mapToInt, если сумму можно посчитать и через reduce
+```
+
+Затем свяжите Stream API с первой половиной занятия: возьмите список, который возвращает `MovieDAO.findAll()` из задания 2.2 (или `findByGenreHQL` из задания 3.3), и посчитайте по нему:
+
+1. количество фильмов по жанрам (`groupingBy` + `counting`);
+2. средний год выхода (`mapToInt` + `average`), обработав случай пустого списка;
+3. названия фильмов, вышедших после 2010 года, отсортированные по алфавиту.
+
+**Ответьте письменно:** (1) почему `average()` возвращает `OptionalDouble`, а не `double`? (2) в каком случае замена `stream()` на `parallelStream()` в этих задачах ускорит программу, а в каком — замедлит?
+
+---
+
+## Часть 6: Дополнительные задания
+
+### Задание 6.1: Пагинация в Hibernate
 
 ```java
 // Реализуйте метод поиска с пагинацией:
@@ -507,7 +647,7 @@ static List<Movie> findPage(SessionFactory sf, int pageNumber, int pageSize) {
 
 ---
 
-### Задание 4.3: Агрегация через HQL
+### Задание 6.2: Агрегация через HQL
 
 Изучите и запустите агрегационные HQL-запросы. Объясните: (1) что возвращает `createQuery` с `SELECT genre, COUNT(*)`? (2) чем `uniqueResult()` отличается от `.list()`?
 
@@ -537,7 +677,7 @@ static void runAggregationQueries(SessionFactory sf) {
 
 ---
 
-## Часть 5: Контрольные вопросы
+## Часть 7: Контрольные вопросы
 
 Ответьте письменно:
 
@@ -553,6 +693,13 @@ static void runAggregationQueries(SessionFactory sf) {
 10. Что такое @Entity и @Table в Hibernate? Что происходит если они отсутствуют?
 11. Чем HQL отличается от SQL? Чем HQL отличается от Criteria API?
 12. Что означает `hbm2ddl.auto = create` в конфигурации Hibernate?
+13. Чем поток (`Stream`) отличается от коллекции? Почему по одному потоку нельзя пройти дважды?
+14. Что такое ленивость промежуточных операций? Что произойдёт, если конвейер не заканчивается терминальной операцией?
+15. Чем `map` отличается от `flatMap`? Приведите задачу, где нужен именно `flatMap`.
+16. Какие аномалии параллельного выполнения вы воспроизвели в задании 4.1? Какой уровень изоляции запрещает каждую из них?
+17. Что означают четыре уровня изоляции и почему самый строгий из них применяют не всегда?
+18. Что генерирует аннотация `@Data` в Lombok и почему её не рекомендуют вешать на JPA-сущности без оговорок?
+19. Почему Lombok должен работать и во время компиляции, и в IDE — а не только при сборке через Maven?
 
 ---
 
@@ -562,11 +709,7 @@ static void runAggregationQueries(SessionFactory sf) {
 1. Задача 1: `MovieJDBC.java` — CRUD через чистый JDBC
 2. Задача 2: `Movie.java`, `MovieDAO.java`, `MovieDAOImpl.java`, `DAOTest.java` — DAO-паттерн
 3. Задача 3: `Movie.java` (с аннотациями), `HibernateMain.java`, `hibernate.cfg.xml` — Hibernate
-4. Ответы на контрольные вопросы
-
-**Критерии оценки:**
-- Все программы запускаются и дают корректные результаты
-- Используется PreparedStatement (не конкатенация строк!)
-- Ресурсы закрыты через try-with-resources
-- DAO реализует все методы интерфейса
-- Hibernate-запросы работают корректно (HQL + Criteria API)
+4. Задание 3.2.1: `Movie.java` на Lombok и письменные ответы
+5. Задание 4.1: код перевода средств и письменный отчёт об эксперименте с уровнями изоляции
+6. Задание 5.1–5.3: `FilmStreams.java` — Stream API
+7. Ответы на контрольные вопросы
