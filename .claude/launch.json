@@ -4,8 +4,8 @@
     {
       "name": "docsify-static",
       "runtimeExecutable": "python",
-      "runtimeArgs": [".claude/nocache_server.py", "5811"],
-      "port": 5811
+      "runtimeArgs": [".claude/nocache_server.py", "5899"],
+      "port": 5899
     }
   ]
 }

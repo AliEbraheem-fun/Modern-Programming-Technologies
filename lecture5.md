@@ -282,6 +282,8 @@ System.out.println("Even squares: " + evenSquares);
 
 `InputStream` и `OutputStream` — абстрактные базовые классы, от которых наследуются все конкретные реализации. Ниже — самые ходовые из них: одни читают/пишут напрямую в файл, другие оборачивают источник буферизацией или добавляют работу с примитивными типами.
 
+`InputStream` — иерархия классов для чтения байтов:
+
 ```mermaid
 classDiagram
     class InputStream { <<abstract>> }
@@ -292,6 +294,17 @@ classDiagram
     InputStream <|-- SystemIn
     class SystemIn["System.in"]
 
+    note for FileInputStream "чтение из файла"
+    note for ByteArrayInputStream "чтение из массива байт (из памяти)"
+    note for BufferedInputStream "буферизированное чтение (ускоряет)"
+    note for DataInputStream "чтение примитивных типов"
+    note for SystemIn "стандартный ввод (клавиатура)"
+```
+
+`OutputStream` — симметричная иерархия для записи байтов:
+
+```mermaid
+classDiagram
     class OutputStream { <<abstract>> }
     OutputStream <|-- FileOutputStream
     OutputStream <|-- ByteArrayOutputStream
@@ -303,11 +316,6 @@ classDiagram
     class SystemOut["System.out"]
     class SystemErr["System.err"]
 
-    note for FileInputStream "чтение из файла"
-    note for ByteArrayInputStream "чтение из массива байт (из памяти)"
-    note for BufferedInputStream "буферизированное чтение (ускоряет)"
-    note for DataInputStream "чтение примитивных типов"
-    note for SystemIn "стандартный ввод (клавиатура)"
     note for FileOutputStream "запись в файл"
     note for ByteArrayOutputStream "запись в массив байт (в память)"
     note for PrintStream "форматированный вывод (printf, println)"
@@ -334,6 +342,8 @@ try (FileInputStream fis = new FileInputStream("bytes.bin")) {
 
 Для работы с текстовыми данными байтовых потоков недостаточно — нужно учитывать кодировку символов. Именно для этого существуют символьные потоки.
 
+`Reader` — иерархия для чтения символов:
+
 ```mermaid
 classDiagram
     class Reader { <<abstract>> }
@@ -342,16 +352,22 @@ classDiagram
     Reader <|-- BufferedReader
     Reader <|-- InputStreamReader
 
+    note for FileReader "чтение текстового файла"
+    note for StringReader "чтение из строки"
+    note for BufferedReader "буферизированное + readLine()"
+    note for InputStreamReader "мост: байты -> символы"
+```
+
+`Writer` — симметричная иерархия для записи символов:
+
+```mermaid
+classDiagram
     class Writer { <<abstract>> }
     Writer <|-- FileWriter
     Writer <|-- StringWriter
     Writer <|-- BufferedWriter
     Writer <|-- PrintWriter
 
-    note for FileReader "чтение текстового файла"
-    note for StringReader "чтение из строки"
-    note for BufferedReader "буферизированное + readLine()"
-    note for InputStreamReader "мост: байты -> символы"
     note for FileWriter "запись в текстовый файл"
     note for BufferedWriter "буферизированное + newLine()"
     note for PrintWriter "printf(), println()"
