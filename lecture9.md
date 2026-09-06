@@ -895,6 +895,8 @@ Button export = new Button("Экспорт", icon);
 
 ### 7.5 CheckBox, RadioButton и ComboBox
 
+Разница между ними — в том, сколько вариантов можно выбрать одновременно: флажок независим от остальных, переключатели в одной `ToggleGroup` взаимоисключающие, а выпадающий список просто экономит место на экране.
+
 ```java
 // Флажок — независимый выбор «да / нет»
 CheckBox scholarship = new CheckBox("Получает стипендию");
@@ -1104,6 +1106,8 @@ private void handleClick(ActionEvent event) {
 `setOnAction()` — удобная обёртка над свойством `onAction`. Оно есть у всех компонентов с «основным действием»: `Button`, `MenuItem`, `TextField`, `ComboBox`, `CheckBox`.
 
 ### 8.3 Мышь и клавиатура
+
+Помимо `onAction` у узлов есть более низкоуровневые обработчики, которые дают доступ к деталям события — координатам клика, нажатой кнопке мыши, конкретной клавише на клавиатуре. Ими пользуются, когда `onAction` недостаточно.
 
 ```java
 pane.setOnMouseClicked(event -> {
@@ -1771,6 +1775,8 @@ public class Student {
 
 ### 14.2 Модель: service/StudentService.java
 
+Модель в этом примере — не сам класс `Student` (он уже описан в 14.1), а сервис вокруг него: он хранит единственный `ObservableList<Student>` и предоставляет операции над ним, чтобы ни контроллер, ни FXML не работали со списком напрямую.
+
 ```java
 package com.example.studentmanager.service;
 
@@ -1897,6 +1903,8 @@ public class StudentService {
 ```
 
 ### 14.4 Контроллер: controller/StudentController.java
+
+Последний недостающий кусок — класс, на который ссылается `fx:controller` в FXML из 14.3. Он получает элементы разметки через `@FXML`-поля, в `initialize()` связывает их с `StudentService`, а в обработчиках кнопок вызывает его методы.
 
 ```java
 package com.example.studentmanager.controller;
