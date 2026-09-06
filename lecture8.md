@@ -31,12 +31,9 @@
 
 **Двухзвенная архитектура (two-tier)** — самый простой вариант: клиент напрямую общается с сервером базы данных.
 
-```
-[ Клиент: настольная программа ]
-              |
-     SQL-запросы напрямую
-              |
-     [ Сервер базы данных ]
+```mermaid
+flowchart LR
+    A["Клиент: настольная программа"] -- "SQL-запросы напрямую" --> B[("Сервер базы данных")]
 ```
 
 Так строили корпоративные системы в 1990-х: программа на компьютере бухгалтера сама открывала соединение с Oracle и слала туда `SELECT`. Такой клиент называют **толстым (fat client)** — вся логика (расчёты, проверки, правила) живёт в нём.
@@ -52,11 +49,10 @@
 
 **Трёхзвенная архитектура (three-tier)** вставляет между клиентом и базой третье звено — **сервер приложений**, где живёт вся бизнес-логика.
 
-```
-[ Клиент ]            [ Сервер приложений ]        [ Сервер БД ]
- браузер   ---HTTP--->  Spring Boot / Tomcat  --JDBC-->  PostgreSQL
- мобильное             контроллеры, сервисы,
- приложение            репозитории (DAO)
+```mermaid
+flowchart LR
+    A["Клиент<br/>браузер, мобильное приложение"] -- HTTP --> B["Сервер приложений<br/>Spring Boot / Tomcat<br/>контроллеры, сервисы, репозитории (DAO)"]
+    B -- JDBC --> C[("Сервер БД<br/>PostgreSQL")]
 ```
 
 Вернёмся к ресторану. Двухзвенная архитектура — это когда посетитель сам ходит на склад и берёт продукты. Трёхзвенная — как настоящий ресторан: посетитель (клиент) общается только с залом, зал передаёт заказ на кухню (сервер приложений), кухня берёт продукты со склада (база данных). Посетителя на склад не пускают, и это правильно: он не знает сроков годности, не умеет вести учёт и может взять чужое.
@@ -153,19 +149,11 @@
 
 ### 2.4 Типичная связка в продакшене
 
-```
-Интернет
-   |
-   v
-[ Nginx ]  :443           — HTTPS, статика (css, js, картинки), сжатие,
-   |                        балансировка, защита от простых атак
-   | HTTP :8080
-   v
-[ Tomcat + ваше Spring Boot приложение ]  — динамика: контроллеры, сервисы
-   |
-   | JDBC :5432
-   v
-[ PostgreSQL ]
+```mermaid
+flowchart TD
+    NET["Интернет"] --> NGINX["Nginx :443<br/>HTTPS, статика (css, js, картинки), сжатие,<br/>балансировка, защита от простых атак"]
+    NGINX -- "HTTP :8080" --> APP["Tomcat + ваше Spring Boot приложение<br/>динамика: контроллеры, сервисы"]
+    APP -- "JDBC :5432" --> DB[("PostgreSQL")]
 ```
 
 Разделение простое: то, что лежит на диске неизменным (логотип, стили, скрипты), быстрее и дешевле отдать Nginx. То, что нужно посчитать, идёт в Java-приложение.
@@ -174,14 +162,14 @@
 
 Исторически Java-приложение упаковывали в **WAR-архив** (Web Application Archive) и «клали» в уже установленный Tomcat:
 
-```
-myapp.war
-├── WEB-INF/
-│   ├── web.xml          — дескриптор развёртывания
-│   ├── classes/         — скомпилированные .class
-│   └── lib/             — jar-зависимости
-├── index.html
-└── css/style.css
+```mermaid
+flowchart TD
+    ROOT["myapp.war"] --> WEBINF["WEB-INF/"]
+    WEBINF --> XML["web.xml — дескриптор развёртывания"]
+    WEBINF --> CLASSES["classes/ — скомпилированные .class"]
+    WEBINF --> LIB["lib/ — jar-зависимости"]
+    ROOT --> INDEX["index.html"]
+    ROOT --> CSS["css/style.css"]
 ```
 
 Spring Boot перевернул схему: теперь **Tomcat встраивается внутрь приложения**, и вы получаете обычный исполняемый JAR.
@@ -629,27 +617,13 @@ TLS даёт три вещи:
 
 Контейнер управляет сервлетом по строгому сценарию из трёх этапов:
 
-```
-   загрузка класса
-         |
-         v
-   создание одного экземпляра  (new HelloServlet())
-         |
-         v
-      init(ServletConfig)        — ровно один раз
-         |
-         v
-  +--> service(request, response) — на каждый запрос,
-  |         |                        параллельно в разных потоках
-  |         +--> doGet / doPost / doPut / doDelete ...
-  |         |
-  +---------+
-         |
-         v
-      destroy()                  — ровно один раз при остановке
-         |
-         v
-   объект отдан сборщику мусора
+```mermaid
+stateDiagram-v2
+    [*] --> Created : загрузка класса + new HelloServlet()
+    Created --> Initialized : init(ServletConfig) — один раз
+    Initialized --> Initialized : service() → doGet/doPost/... — на каждый запрос, параллельно в разных потоках
+    Initialized --> Destroyed : destroy() — один раз при остановке
+    Destroyed --> [*] : объект отдан сборщику мусора
 ```
 
 | Этап | Метод | Сколько раз | Что делать внутри |
@@ -1029,28 +1003,19 @@ public class ServletRegistrationConfig {
 
 Теперь соберём картину целиком и свяжем с Лекцией 7.
 
-```
-HTTP-запрос
-     |
-     v
-[ Tomcat ] разбирает текст, создаёт HttpServletRequest / HttpServletResponse
-     |
-     v
-[ Цепочка фильтров (Filter) ] — логирование, CORS, Spring Security
-     |
-     v
-[ DispatcherServlet ] — это обычный сервлет, зарегистрированный на "/"
-     |
-     +--> HandlerMapping: какой @Controller и метод отвечают за этот URL?
-     +--> HandlerAdapter: вызвать метод, подставив аргументы
-     |       @PathVariable  <- из request.getRequestURI()
-     |       @RequestParam  <- из request.getParameter()
-     |       @RequestBody   <- из request.getInputStream() через Jackson
-     +--> Ваш метод контроллера (бизнес-логика)
-     +--> Возвращённый объект -> HttpMessageConverter -> JSON -> response.getWriter()
-     |    либо имя шаблона -> ViewResolver -> Thymeleaf -> HTML
-     v
-HTTP-ответ
+```mermaid
+flowchart TD
+    REQ["HTTP-запрос"] --> TOMCAT["Tomcat<br/>разбирает текст, создаёт HttpServletRequest/HttpServletResponse"]
+    TOMCAT --> FILTERS["Цепочка фильтров (Filter)<br/>логирование, CORS, Spring Security"]
+    FILTERS --> DS["DispatcherServlet<br/>обычный сервлет, зарегистрированный на &quot;/&quot;"]
+    DS --> HM["HandlerMapping: какой @Controller и метод отвечают за URL?"]
+    HM --> HA["HandlerAdapter: вызвать метод, подставив аргументы<br/>@PathVariable ← request.getRequestURI()<br/>@RequestParam ← request.getParameter()<br/>@RequestBody ← request.getInputStream() через Jackson"]
+    HA --> CTRL["Ваш метод контроллера (бизнес-логика)"]
+    CTRL --> RESULT["Возвращённый объект"]
+    RESULT -- "JSON" --> HMC["HttpMessageConverter → JSON → response.getWriter()"]
+    RESULT -- "HTML" --> VR["имя шаблона → ViewResolver → Thymeleaf → HTML"]
+    HMC --> RESP["HTTP-ответ"]
+    VR --> RESP
 ```
 
 Ключевая мысль лекции: **`DispatcherServlet` — обычный сервлет**. `@GetMapping` — это не новый протокол, а способ сказать `DispatcherServlet`, какой метод вызвать, когда `request.getMethod()` вернёт `"GET"`, а путь совпадёт с шаблоном. Всё, что мы сегодня разобрали, лежит на один уровень ниже аннотаций.

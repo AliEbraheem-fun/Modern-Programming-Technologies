@@ -372,16 +372,12 @@ public class LoggingAspect {
 - **View (Представление)** — отвечает за отображение данных пользователю (HTML, JSP, Thymeleaf, JSON/XML). Генерируется на основе модели, которую контроллер передаёт в представление.
 - **Controller (Контроллер)** — обрабатывает входящие HTTP-запросы, вызывает соответствующие сервисы/репозитории и передаёт результат в модель и представление.
 
-```
-HTTP запрос
-    ↓
-Controller (@Controller / @RestController)
-    ↓
-Service (@Service)
-    ↓
-Repository (@Repository)
-    ↓
-База данных
+```mermaid
+flowchart TD
+    A["HTTP запрос"] --> B["Controller (@Controller / @RestController)"]
+    B --> C["Service (@Service)"]
+    C --> D["Repository (@Repository)"]
+    D --> E[("База данных")]
 ```
 
 ### 6.2 @Controller vs @RestController

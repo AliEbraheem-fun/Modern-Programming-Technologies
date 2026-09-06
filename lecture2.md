@@ -132,31 +132,38 @@ public class SmartDevice extends Device implements Connectable, Updatable {
 
 ### Структура класса SmartDevice
 
-```
-                    ┌─────────────────────┐
-                    │   Device (abstract) │
-                    │  + turnOn(): void   │
-                    └──────────┬──────────┘
-                               │ extends
-           ┌───────────────────┼──────────────────┐
-           │                   │                  │
-   ┌───────┴───────┐  ┌───────┴───────┐  ┌────────┴────────┐
-   │  Connectable  │  │  SmartDevice  │  │    Updatable    │
-   │  + connect()  │  │ - modelName   │  │ + updateFirm..()│
-   └───────────────┘  │ - isConnected │  └─────────────────┘
-      implements      │ + deviceCount │     implements
-           └──────────│ + MANUFACTURER│──────────┘
-                      │               │
-                      │ + turnOn()    │
-                      │ + connect()   │
-                      │ + updateFirm..│
-                      │ + get/set...  │
-                      │               │
-                      │ ┌───────────┐ │
-                      │ │ Firmware  │ │  (вложенный static класс)
-                      │ │ Version   │ │
-                      │ └───────────┘ │
-                      └───────────────┘
+```mermaid
+classDiagram
+    class Device {
+        <<abstract>>
+        +turnOn() void
+    }
+    class Connectable {
+        <<interface>>
+        +connect()
+    }
+    class Updatable {
+        <<interface>>
+        +updateFirmware()
+    }
+    class SmartDevice {
+        -modelName
+        -isConnected
+        +deviceCount$ int
+        +MANUFACTURER$ String
+        +turnOn()
+        +connect()
+        +updateFirmware()
+        +get/set...()
+    }
+    class FirmwareVersion {
+        <<nested static>>
+        +showVersion()
+    }
+    Device <|-- SmartDevice : extends
+    Connectable <|.. SmartDevice : implements
+    Updatable <|.. SmartDevice : implements
+    SmartDevice *-- FirmwareVersion : вложенный класс
 ```
 
 ### Разбор ключевых элементов класса
@@ -347,31 +354,34 @@ public class Main {
 
 ### Иерархия наследования в примере
 
-```
-    ┌──────────────────────┐
-    │  «interface»         │
-    │  Trainable           │
-    │  + train(): void     │
-    │  + praise(): void    │  (default)
-    └──────────┬───────────┘
-               │ implements
-    ┌──────────┴───────────┐
-    │  «abstract»          │
-    │  Animal              │
-    │  # name: String      │
-    │  + sleep(): void     │
-    │  + makeSound(): void │  (abstract)
-    │  # move(): void      │  (abstract)
-    └──────┬──────┬────────┘
-           │      │
-     ┌─────┘      └─────┐
-     │                  │
-┌────┴─────┐      ┌─────┴────┐
-│   Dog    │      │   Bird   │
-│ +makeSnd │      │ +makeSnd │
-│ #move    │      │ #move    │
-│ +train   │      │ +train   │
-└──────────┘      └──────────┘
+```mermaid
+classDiagram
+    class Trainable {
+        <<interface>>
+        +train() void
+        +praise() void
+    }
+    note for Trainable "praise() — метод по умолчанию (default)"
+    class Animal {
+        <<abstract>>
+        #name String
+        +sleep() void
+        +makeSound() void*
+        #move() void*
+    }
+    class Dog {
+        +makeSound()
+        #move()
+        +train()
+    }
+    class Bird {
+        +makeSound()
+        #move()
+        +train()
+    }
+    Trainable <|.. Animal : implements
+    Animal <|-- Dog
+    Animal <|-- Bird
 ```
 
 **Что показывает этот пример?**
@@ -467,23 +477,25 @@ class ShapeDemo {
 | `non-sealed` | Ограничение снимается, любой класс может наследовать дальше |
 | `record` | Записи неявно `final` |
 
-```
-    ┌──────────────────────────┐
-    │  «sealed» Shape          │
-    │  permits: Circle,        │
-    │  Rectangle, Triangle     │
-    └────┬────────┬────────┬───┘
-         │        │        │
-   ┌─────┴──┐ ┌───┴────┐ ┌─┴──────────┐
-   │ Circle │ │ Rect.  │ │ Triangle   │
-   │ record │ │ record │ │ non-sealed │
-   │ (final)│ │ (final)│ │            │
-   └────────┘ └────────┘ └──────┬─────┘
-                                │
-                          ┌─────┴──────┐
-                          │ можно      │
-                          │ наследовать│
-                          └────────────┘
+```mermaid
+classDiagram
+    class Shape {
+        <<sealed>>
+        permits Circle, Rectangle, Triangle
+    }
+    class Circle {
+        <<record, final>>
+    }
+    class Rectangle {
+        <<record, final>>
+    }
+    class Triangle {
+        <<non-sealed>>
+    }
+    note for Triangle "non-sealed — можно наследовать дальше, без ограничений"
+    Shape <|-- Circle
+    Shape <|-- Rectangle
+    Shape <|-- Triangle
 ```
 
 ---
@@ -606,31 +618,35 @@ public class Main {
 
 ### Иерархия интерфейсов в примере
 
-```
-  ┌───────────────┐     ┌────────────────┐
-  │  «interface»  │     │  «interface»   │
-  │   Movable     │     │   Powered      │
-  │ + move()      │     │ + turnOn()     │
-  │ + stop()  def │     │ + battery() def│
-  │ + info() stat │     └───────┬────────┘
-  │ - log()  priv │             │ extends
-  └───────┬───────┘             │
-          │ extends             │
-          │    ┌────────────────┘
-          │    │
-   ┌──────┴────┴───────┐
-   │    «interface»    │
-   │   SmartDevice     │
-   │ + connectToWiFi() │
-   └────────┬──────────┘
-            │ implements
-   ┌────────┴──────────┐
-   │      Robot        │
-   │ + move()          │
-   │ + turnOn()        │
-   │ + connectToWiFi() │
-   │ + stop()  override│
-   └───────────────────┘
+```mermaid
+classDiagram
+    class Movable {
+        <<interface>>
+        +move()
+        +stop()
+        +info()$
+        -log()
+    }
+    note for Movable "stop() — default; info() — static; log() — private"
+    class Powered {
+        <<interface>>
+        +turnOn()
+        +battery()
+    }
+    note for Powered "battery() — default"
+    class SmartDevice {
+        <<interface>>
+        +connectToWiFi()
+    }
+    class Robot {
+        +move()
+        +turnOn()
+        +connectToWiFi()
+        +stop()
+    }
+    Movable <|-- SmartDevice : extends
+    Powered <|-- SmartDevice : extends
+    SmartDevice <|.. Robot : implements
 ```
 
 ### Попробуй в jshell!
@@ -792,29 +808,26 @@ jagged[1] = new int[] {3, 4, 5};
 
 ### Массивы в памяти
 
+Одномерный массив `int[] arr = {10, 20, 30}` — непрерывный блок памяти в heap, `length = 3`:
+
+```mermaid
+flowchart LR
+    arr(["arr"]) --> A0["10<br/>[0]"]
+    subgraph HEAP["Куча (heap)"]
+        A0 --- A1["20<br/>[1]"] --- A2["30<br/>[2]"]
+    end
 ```
-Одномерный массив int[] arr = {10, 20, 30}:
 
-  arr ──→ ┌─────┬─────┬─────┐
-          │  10 │  20 │  30 │     Непрерывный блок памяти (heap)
-          └─────┴─────┴─────┘
-          [0]   [1]   [2]        length = 3
+Зубчатый массив `int[][] jagged` — массив ссылок, каждая строка которого хранится отдельно и может быть разной длины:
 
-
-Зубчатый массив int[][] jagged:
-
-  jagged ──→ ┌─────┬─────┬─────┐
-             │  ●  │  ●  │  ●  │   Массив ссылок
-             └──┬──┴──┬──┴──┬──┘
-                │     │     │
-                ▼     │     ▼
-            ┌───┬───┐ │  ┌───┐
-            │ 1 │ 2 │ │  │ 6 │     Каждая строка — отдельный массив
-            └───┴───┘ │  └───┘     в памяти (может быть разной длины)
-                      ▼
-               ┌───┬───┬───┐
-               │ 3 │ 4 │ 5 │
-               └───┴───┴───┘
+```mermaid
+flowchart LR
+    jagged(["jagged"]) --> R0["● [0]"]
+    jagged --> R1["● [1]"]
+    jagged --> R2["● [2]"]
+    R0 --> C0["1"] --- C1["2"]
+    R1 --> C2["6"]
+    R2 --> C3["3"] --- C4["4"] --- C5["5"]
 ```
 
 > **Частые ошибки при работе с массивами:**
@@ -1003,28 +1016,33 @@ String Pool (пул строк) — это специальная область
 3. Если не найдена — создаётся новый объект в Pool и возвращается ссылка на него
 4. Когда вы используете `new String("Test")` — **всегда** создаётся новый объект в обычной куче, **минуя** Pool
 
+```mermaid
+flowchart LR
+    subgraph STACK["Стек (Stack)"]
+        s1(["s1"])
+        s2(["s2"])
+        s3(["s3"])
+        s4(["s4"])
+    end
+    subgraph HEAP["Куча (Heap)"]
+        subgraph POOL["String Pool"]
+            P["Test"]
+        end
+        H3["Test (новый объект)"]
+        H4["Test (новый объект)"]
+    end
+    s1 --> P
+    s2 --> P
+    s3 --> H3
+    s4 --> H4
 ```
- Стек (Stack)                     Куча (Heap)
- ┌──────────┐          ┌───────────────────────────────────┐
- │          │          │       String Pool                 │
- │ s1  ●────┼──────┐   │      ┌────────┐                   │
- │          │      └───┼─────→│ "Test" │                   │
- │ s2  ●────┼──────────┼─────→│        │                   │
- │          │          │      └────────┘                   │
- │          │          ├───────────────────────────────────┤
- │          │          │      ┌──────────────────────┐     │
- │ s3  ●────┼──────────┼─────→│ "Test" (новый объект)│     │
- │          │          │      └──────────────────────┘     │
- │          │          │      ┌──────────────────────┐     │
- │ s4  ●────┼──────────┼─────→│ "Test" (новый объект)│     │
- └──────────┘          │      └──────────────────────┘     │
-                       └───────────────────────────────────┘
 
- s1 == s2      → true   (одна ссылка в Pool)
- s1 == s3      → false  (разные объекты)
- s3 == s4      → false  (два разных объекта в куче)
- s1.equals(s3) → true   (одинаковое содержимое)
-```
+| Сравнение | Результат | Почему |
+|-----------|:---------:|--------|
+| `s1 == s2` | `true` | одна ссылка в Pool |
+| `s1 == s3` | `false` | разные объекты |
+| `s3 == s4` | `false` | два разных объекта в куче |
+| `s1.equals(s3)` | `true` | одинаковое содержимое |
 
 Разберём пошагово:
 

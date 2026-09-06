@@ -538,28 +538,33 @@ public static <T> void copy(List<? super T> dest, List<? extends T> src) {
 
 В Java исключения — это объекты. Все они наследуют от класса `Throwable`:
 
-```
-Throwable
-├── Error (непроверяемые — не нужно обрабатывать)
-│   ├── OutOfMemoryError
-│   ├── StackOverflowError
-│   └── AssertionError
-│
-└── Exception
-    ├── RuntimeException (непроверяемые — unchecked)
-    │   ├── NullPointerException
-    │   ├── ArrayIndexOutOfBoundsException
-    │   ├── ClassCastException
-    │   ├── IllegalArgumentException
-    │   ├── IllegalStateException
-    │   └── ArithmeticException
-    │
-    └── Другие Exception (проверяемые — checked)
-        ├── IOException
-        │   ├── FileNotFoundException
-        │   └── EOFException
-        ├── SQLException
-        └── ParseException
+```mermaid
+classDiagram
+    Throwable <|-- Error
+    Error <|-- OutOfMemoryError
+    Error <|-- StackOverflowError
+    Error <|-- AssertionError
+    Throwable <|-- Exception
+    Exception <|-- RuntimeException
+    RuntimeException <|-- NullPointerException
+    RuntimeException <|-- ArrayIndexOutOfBoundsException
+    RuntimeException <|-- ClassCastException
+    RuntimeException <|-- IllegalArgumentException
+    RuntimeException <|-- IllegalStateException
+    RuntimeException <|-- ArithmeticException
+    Exception <|-- IOException
+    IOException <|-- FileNotFoundException
+    IOException <|-- EOFException
+    Exception <|-- SQLException
+    Exception <|-- ParseException
+
+    class Error {
+        <<непроверяемые, не нужно обрабатывать>>
+    }
+    class RuntimeException {
+        <<непроверяемые — unchecked>>
+    }
+    note for IOException "IOException, SQLException, ParseException — проверяемые (checked), т.к. не наследники RuntimeException"
 ```
 
 ### 4.2 Checked vs Unchecked исключения

@@ -20,35 +20,58 @@
 
 Прежде чем использовать коллекции, важно понять их архитектуру. Обратите внимание, что `Map` стоит отдельно — он не наследует `Collection`, потому что хранит пары ключ-значение, а не отдельные элементы.
 
-```
-Iterable<E>
-└── Collection<E>
-    ├── List<E>              — Упорядоченный список с дубликатами
-    │   ├── ArrayList
-    │   ├── LinkedList
-    │   └── Vector (устарел)
-    │
-    ├── Set<E>               — Множество без дубликатов
-    │   ├── SortedSet<E>     — Отсортированное множество
-    │   │   └── NavigableSet<E>
-    │   │       └── TreeSet
-    │   ├── HashSet
-    │   └── LinkedHashSet
-    │
-    └── Queue<E>             — Очередь FIFO
-        ├── BlockingQueue<E> — Потокобезопасная очередь с блокировкой
-        ├── Deque<E>         — Двусторонняя очередь
-        │   ├── ArrayDeque
-        │   └── LinkedList   — Реализует и List, и Deque
-        └── PriorityQueue
+```mermaid
+classDiagram
+    Iterable <|-- Collection
+    Collection <|-- List
+    List <|.. ArrayList
+    List <|.. LinkedList
+    List <|.. Vector
+    Collection <|-- Set
+    Set <|-- SortedSet
+    SortedSet <|-- NavigableSet
+    NavigableSet <|.. TreeSet
+    Set <|.. HashSet
+    Set <|.. LinkedHashSet
+    Collection <|-- Queue
+    Queue <|-- BlockingQueue
+    Queue <|-- Deque
+    Deque <|.. ArrayDeque
+    Deque <|.. LinkedList
+    Queue <|.. PriorityQueue
 
-Map<K, V>                   — Ключ-значение (не Collection!)
-├── SortedMap<K,V>           — Отсортированная Map
-│   └── NavigableMap<K,V>
-│       └── TreeMap
-├── HashMap
-├── LinkedHashMap
-└── Hashtable (устарел)
+    class List { <<interface>> }
+    class Set { <<interface>> }
+    class Queue { <<interface>> }
+    class Deque { <<interface>> }
+    class SortedSet { <<interface>> }
+    class NavigableSet { <<interface>> }
+    class BlockingQueue { <<interface>> }
+    class Vector { <<deprecated>> }
+
+    note for List "упорядоченный список с дубликатами"
+    note for Set "множество без дубликатов"
+    note for Queue "очередь FIFO"
+    note for Deque "двусторонняя очередь"
+    note for BlockingQueue "потокобезопасная очередь с блокировкой"
+    note for LinkedList "реализует и List, и Deque"
+```
+
+`Map<K, V>` хранит пары ключ-значение и **не наследует** `Collection` — это отдельная иерархия:
+
+```mermaid
+classDiagram
+    Map <|-- SortedMap
+    SortedMap <|-- NavigableMap
+    NavigableMap <|.. TreeMap
+    Map <|.. HashMap
+    Map <|.. LinkedHashMap
+    Map <|.. Hashtable
+
+    class Map { <<interface>> }
+    class SortedMap { <<interface>> }
+    class NavigableMap { <<interface>> }
+    class Hashtable { <<deprecated>> }
 ```
 
 **Абстрактные базовые классы** (`AbstractList`, `AbstractSet`, `AbstractMap` и др.) упрощают создание собственных коллекций — достаточно реализовать лишь несколько ключевых методов вместо всего интерфейса.
@@ -249,21 +272,35 @@ System.out.println("Even squares: " + evenSquares);
 
 ### 2.2 Байтовые потоки
 
-```
-InputStream (абстрактный)
-├── FileInputStream      — Чтение из файла
-├── ByteArrayInputStream — Чтение из массива байт (из памяти)
-├── BufferedInputStream  — Буферизированное чтение (ускоряет)
-└── DataInputStream      — Чтение примитивных типов
-+ System.in             — Стандартный ввод (клавиатура), тип InputStream
+```mermaid
+classDiagram
+    class InputStream { <<abstract>> }
+    InputStream <|-- FileInputStream
+    InputStream <|-- ByteArrayInputStream
+    InputStream <|-- BufferedInputStream
+    InputStream <|-- DataInputStream
+    InputStream <|-- SystemIn
+    class SystemIn["System.in"]
 
-OutputStream (абстрактный)
-├── FileOutputStream     — Запись в файл
-├── ByteArrayOutputStream — Запись в массив байт (в память)
-├── BufferedOutputStream
-├── DataOutputStream
-└── PrintStream          — Форматированный вывод (printf, println)
-+ System.out / System.err — Стандартный вывод / вывод ошибок (консоль), тип PrintStream
+    class OutputStream { <<abstract>> }
+    OutputStream <|-- FileOutputStream
+    OutputStream <|-- ByteArrayOutputStream
+    OutputStream <|-- BufferedOutputStream
+    OutputStream <|-- DataOutputStream
+    OutputStream <|-- PrintStream
+    PrintStream <|-- SystemOut
+    PrintStream <|-- SystemErr
+    class SystemOut["System.out"]
+    class SystemErr["System.err"]
+
+    note for FileInputStream "чтение из файла"
+    note for ByteArrayInputStream "чтение из массива байт (из памяти)"
+    note for BufferedInputStream "буферизированное чтение (ускоряет)"
+    note for DataInputStream "чтение примитивных типов"
+    note for SystemIn "стандартный ввод (клавиатура)"
+    note for FileOutputStream "запись в файл"
+    note for ByteArrayOutputStream "запись в массив байт (в память)"
+    note for PrintStream "форматированный вывод (printf, println)"
 ```
 
 ```java
@@ -287,18 +324,27 @@ try (FileInputStream fis = new FileInputStream("bytes.bin")) {
 
 Для работы с текстовыми данными байтовых потоков недостаточно — нужно учитывать кодировку символов. Именно для этого существуют символьные потоки.
 
-```
-Reader (абстрактный)
-├── FileReader           — Чтение текстового файла
-├── StringReader         — Чтение из строки
-├── BufferedReader       — Буферизированное + readLine()
-└── InputStreamReader    — Мост: байты -> символы
+```mermaid
+classDiagram
+    class Reader { <<abstract>> }
+    Reader <|-- FileReader
+    Reader <|-- StringReader
+    Reader <|-- BufferedReader
+    Reader <|-- InputStreamReader
 
-Writer (абстрактный)
-├── FileWriter           — Запись в текстовый файл
-├── StringWriter
-├── BufferedWriter       — Буферизированное + newLine()
-└── PrintWriter          — printf(), println()
+    class Writer { <<abstract>> }
+    Writer <|-- FileWriter
+    Writer <|-- StringWriter
+    Writer <|-- BufferedWriter
+    Writer <|-- PrintWriter
+
+    note for FileReader "чтение текстового файла"
+    note for StringReader "чтение из строки"
+    note for BufferedReader "буферизированное + readLine()"
+    note for InputStreamReader "мост: байты -> символы"
+    note for FileWriter "запись в текстовый файл"
+    note for BufferedWriter "буферизированное + newLine()"
+    note for PrintWriter "printf(), println()"
 ```
 
 ```java
@@ -409,21 +455,17 @@ Files.walk(Path.of("src"))
 
 **Поток (Thread)** — это лёгковесная единица выполнения **внутри** процесса. Все потоки одного процесса **разделяют** общую память (кучу), но имеют **собственный стек вызовов**.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                      Процесс (JVM)                      │
-│                                                         │
-│  ┌─────────────── Общая память (Heap) ───────────────┐  │
-│  │  объекты, статические поля, массивы               │  │
-│  └───────────────────────────────────────────────────┘  │
-│                                                         │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
-│  │ Поток 1  │  │ Поток 2  │  │ Поток 3  │              │
-│  │ (main)   │  │          │  │          │              │
-│  │          │  │          │  │          │              │
-│  │ свой стек│  │ свой стек│  │ свой стек│              │
-│  └──────────┘  └──────────┘  └──────────┘              │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph PROC["Процесс (JVM)"]
+        HEAP["Общая память (Heap)<br/>объекты, статические поля, массивы"]
+        T1["Поток 1 (main)<br/>свой стек"]
+        T2["Поток 2<br/>свой стек"]
+        T3["Поток 3<br/>свой стек"]
+        T1 -.-> HEAP
+        T2 -.-> HEAP
+        T3 -.-> HEAP
+    end
 ```
 
 | Критерий | Процесс | Поток |
@@ -485,20 +527,18 @@ t3.join();
 
 Каждый поток в Java проходит через определённые состояния. Давайте посмотрим на эту схему — она поможет понять, что происходит с потоком от момента создания до завершения:
 
-```
-                     start()
-            NEW ───────────────> RUNNABLE ─── run() завершён ──> TERMINATED
-                                  ▲  ▲  ▲
-                                  │  │  │
-                 захват монитора ─┘  │  └─ notify()/interrupt()
-                                    │        или timeout
-                                    │
-              ┌─────────────────────┼─────────────────────┐
-              │                     │                     │
-    ждёт монитор           wait()/join()          sleep()/wait(ms)
-    (synchronized)                │                     │
-              │                   │                     │
-          BLOCKED             WAITING            TIMED_WAITING
+```mermaid
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> RUNNABLE : start()
+    RUNNABLE --> BLOCKED : ждёт монитор (synchronized)
+    BLOCKED --> RUNNABLE : захват монитора
+    RUNNABLE --> WAITING : wait()/join()
+    WAITING --> RUNNABLE : notify()/interrupt()
+    RUNNABLE --> TIMED_WAITING : sleep()/wait(ms)
+    TIMED_WAITING --> RUNNABLE : notify()/interrupt() или timeout
+    RUNNABLE --> TERMINATED : run() завершён
+    TERMINATED --> [*]
 ```
 
 **Состояния потока (Thread.State):**

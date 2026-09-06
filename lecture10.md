@@ -530,12 +530,12 @@ JUnit 5 = JUnit Platform + JUnit Jupiter + JUnit Vintage
 
 ### 6.3 Где живут тесты
 
-```
-project/
-├── src/
-│   ├── main/java/ru/fa/library/service/FineCalculator.java     # код
-│   └── test/java/ru/fa/library/service/FineCalculatorTest.java # тест
-└── target/
+```mermaid
+flowchart TD
+    ROOT["project/"] --> SRC["src/"]
+    SRC --> MAIN["main/java/ru/fa/library/service/FineCalculator.java — код"]
+    SRC --> TEST["test/java/ru/fa/library/service/FineCalculatorTest.java — тест"]
+    ROOT --> TARGET["target/"]
 ```
 
 Правила, которые Maven и Surefire считают само собой разумеющимися:
@@ -722,15 +722,13 @@ class DatabaseConnectionTest {
 
 Порядок выполнения для класса с двумя тестами:
 
-```
-@BeforeAll                     ← один раз
-    ┌ конструктор класса
-    │ @BeforeEach → @Test test1 → @AfterEach
-    └
-    ┌ конструктор класса       ← НОВЫЙ экземпляр
-    │ @BeforeEach → @Test test2 → @AfterEach
-    └
-@AfterAll                      ← один раз
+```mermaid
+flowchart TD
+    BA["@BeforeAll — один раз"] --> C1["конструктор класса (экземпляр 1)"]
+    C1 --> BE1["@BeforeEach"] --> T1["@Test test1"] --> AE1["@AfterEach"]
+    AE1 --> C2["конструктор класса — НОВЫЙ экземпляр"]
+    C2 --> BE2["@BeforeEach"] --> T2["@Test test2"] --> AE2["@AfterEach"]
+    AE2 --> AA["@AfterAll — один раз"]
 ```
 
 Такое поведение задаётся режимом `@TestInstance(Lifecycle.PER_METHOD)` — он включён по умолчанию. Альтернатива — `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`: создаётся один экземпляр класса на все тесты, и `@BeforeAll` разрешено делать нестатическим. Плата — общее состояние между тестами, то есть риск нарушить их независимость.

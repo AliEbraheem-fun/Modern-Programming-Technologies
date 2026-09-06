@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "docsify-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [".claude/nocache_server.py", "5677"],
+      "port": 5677
+    }
+  ]
+}

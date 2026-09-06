@@ -34,19 +34,19 @@ Maven — наиболее распространённая система сб�
 
 #### Стандартная структура проекта
 
-```
-project/
-├── pom.xml                    # Файл конфигурации (Project Object Model)
-├── src/
-│   ├── main/
-│   │   ├── java/              # Исходный код приложения
-│   │   └── resources/         # Конфигурационные файлы, свойства
-│   └── test/
-│       ├── java/              # Тестовый код
-│       └── resources/         # Тестовые ресурсы
-└── target/                    # Результаты сборки (игнорируется git)
-    ├── classes/               # Скомпилированные .class файлы
-    └── project-1.0.jar        # Итоговый JAR
+```mermaid
+flowchart TD
+    ROOT["project/"] --> POM["pom.xml — Project Object Model"]
+    ROOT --> SRC["src/"]
+    SRC --> MAIN["main/"]
+    MAIN --> MJAVA["java/ — исходный код приложения"]
+    MAIN --> MRES["resources/ — конфигурационные файлы, свойства"]
+    SRC --> TEST["test/"]
+    TEST --> TJAVA["java/ — тестовый код"]
+    TEST --> TRES["resources/ — тестовые ресурсы"]
+    ROOT --> TARGET["target/ — результаты сборки (игнорируется git)"]
+    TARGET --> CLASSES["classes/ — скомпилированные .class файлы"]
+    TARGET --> JAR["project-1.0.jar — итоговый JAR"]
 ```
 
 #### Файл pom.xml
@@ -172,13 +172,13 @@ Gradle — более современная система сборки, исп
 
 #### Стандартная структура (аналогична Maven)
 
-```
-project/
-├── build.gradle (или build.gradle.kts для Kotlin DSL)
-├── settings.gradle
-├── gradlew / gradlew.bat  (Gradle wrapper)
-├── gradle/wrapper/
-└── src/...
+```mermaid
+flowchart TD
+    ROOT["project/"] --> BG["build.gradle (или build.gradle.kts для Kotlin DSL)"]
+    ROOT --> SG["settings.gradle"]
+    ROOT --> GW["gradlew / gradlew.bat — Gradle wrapper"]
+    ROOT --> GWD["gradle/wrapper/"]
+    ROOT --> SRC["src/..."]
 ```
 
 **Gradle Wrapper (`gradlew` / `gradlew.bat`)** — скрипт, который позволяет запускать сборку **без предварительной установки Gradle** на машине. Wrapper автоматически скачивает нужную версию Gradle, указанную в `gradle/wrapper/gradle-wrapper.properties`. Это гарантирует, что все разработчики в команде используют одинаковую версию Gradle.
@@ -289,16 +289,12 @@ tasks.test {
 Представьте, что JDBC — это универсальная розетка. Стандарт один, а вилки (драйверы) у каждого производителя свои. Вашему приложению не нужно знать, как именно устроена конкретная база данных — достаточно «воткнуть» нужный драйвер.
 
 **Архитектура JDBC:**
-```
-Java-приложение
-      ↓
-JDBC API (java.sql.*)         ← Стандартные интерфейсы
-      ↓
-JDBC Driver Manager           ← Управляет драйверами
-      ↓
-JDBC Driver (MySQL, H2, PG...) ← Специфичный для СУБД
-      ↓
-База данных
+```mermaid
+flowchart TD
+    APP["Java-приложение"] --> API["JDBC API (java.sql.*)<br/>стандартные интерфейсы"]
+    API --> DM["JDBC Driver Manager<br/>управляет драйверами"]
+    DM --> DRV["JDBC Driver (MySQL, H2, PostgreSQL...)<br/>специфичный для СУБД"]
+    DRV --> DB[("База данных")]
 ```
 
 **Основные классы и интерфейсы:**
@@ -603,13 +599,12 @@ public class MovieDAOImpl implements MovieDAO {
 
 **С ORM:** Вы описываете маппинг между классом и таблицей, а ORM-фреймворк генерирует SQL автоматически.
 
-```
-Java класс Movie   ←→   Таблица movies
-   поле id         ←→   столбец id (PRIMARY KEY)
-   поле title      ←→   столбец title
-   поле genre      ←→   столбец genre
-   поле year       ←→   столбец year
-```
+| Java-класс `Movie` | Таблица `movies` |
+|---------------------|-------------------|
+| поле `id` | столбец `id` (PRIMARY KEY) |
+| поле `title` | столбец `title` |
+| поле `genre` | столбец `genre` |
+| поле `year` | столбец `year` |
 
 ### 3.2 Hibernate — главный ORM для Java
 
@@ -1518,13 +1513,9 @@ List<String> namesDeclarative = users.stream()
 
 Любой конвейер устроен одинаково и состоит ровно из трёх частей:
 
-```
-Источник  →  Промежуточные операции  →  Терминальная операция
-(stream)     (filter, map, sorted...)    (collect, forEach, count...)
-   ↑                    ↑                          ↑
-коллекция,       возвращают Stream,        возвращает результат
-массив, файл     ленивые, их может         (или ничего) и ЗАПУСКАЕТ
-                 быть сколько угодно       весь конвейер
+```mermaid
+flowchart LR
+    A["Источник (stream)<br/>коллекция, массив, файл"] --> B["Промежуточные операции<br/>filter, map, sorted...<br/>возвращают Stream, ленивые, их может быть сколько угодно"] --> C["Терминальная операция<br/>collect, forEach, count...<br/>возвращает результат (или ничего) и ЗАПУСКАЕТ весь конвейер"]
 ```
 
 ### 6.2 Создание потоков

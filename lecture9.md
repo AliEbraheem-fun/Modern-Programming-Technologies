@@ -155,19 +155,19 @@ AWT и Swing никуда не делись: часть классов AWT (`jav
 
 ### 2.3 Структура проекта
 
-```
-student-manager/
-├── pom.xml
-└── src/main/
-    ├── java/com/example/studentmanager/
-    │   ├── MainApp.java              # наследник Application
-    │   ├── Launcher.java             # запасная точка входа (см. 2.5)
-    │   ├── controller/StudentController.java
-    │   ├── model/Student.java
-    │   └── service/StudentService.java
-    └── resources/com/example/studentmanager/
-        ├── students-view.fxml        # разметка окна
-        └── styles.css                # таблица стилей
+```mermaid
+flowchart TD
+    ROOT["student-manager/"] --> POM["pom.xml"]
+    ROOT --> SRC["src/main/"]
+    SRC --> JAVA["java/com/example/studentmanager/"]
+    JAVA --> MAIN["MainApp.java — наследник Application"]
+    JAVA --> LAUNCHER["Launcher.java — запасная точка входа (см. 2.5)"]
+    JAVA --> CTRL["controller/StudentController.java"]
+    JAVA --> MODEL["model/Student.java"]
+    JAVA --> SVC["service/StudentService.java"]
+    SRC --> RES["resources/com/example/studentmanager/"]
+    RES --> FXML["students-view.fxml — разметка окна"]
+    RES --> CSS["styles.css — таблица стилей"]
 ```
 
 Соглашение: **FXML и CSS кладут в `src/main/resources`, повторяя структуру пакетов**. Тогда файл, лежащий рядом с классом, находится вызовом `MainApp.class.getResource("students-view.fxml")` — без абсолютных путей.
@@ -268,19 +268,18 @@ public class HelloApp extends Application {
 
 Метод `launch()` не просто «вызывает `start()`» — он запускает целую машину:
 
-```
-main()
- └─► launch(args)
-       ├─ 1. Запускает среду выполнения JavaFX (графику, поток отрисовки)
-       ├─ 2. Создаёт экземпляр вашего класса Application через рефлексию
-       │     (поэтому нужен public-конструктор без аргументов)
-       ├─ 3. Вызывает init()          ← поток JavaFX-Launcher
-       ├─ 4. Создаёт primary Stage
-       ├─ 5. Вызывает start(stage)    ← JavaFX Application Thread
-       │        ... приложение живёт и обрабатывает события ...
-       ├─ 6. Закрыто последнее окно ИЛИ вызван Platform.exit()
-       ├─ 7. Вызывает stop()          ← JavaFX Application Thread
-       └─ 8. Завершает среду выполнения; управление возвращается в main()
+```mermaid
+flowchart TD
+    MAIN["main()"] --> LAUNCH["launch(args)"]
+    LAUNCH --> S1["1. Запускает среду выполнения JavaFX (графику, поток отрисовки)"]
+    S1 --> S2["2. Создаёт экземпляр Application через рефлексию<br/>(нужен public-конструктор без аргументов)"]
+    S2 --> S3["3. Вызывает init() ← JavaFX-Launcher Thread"]
+    S3 --> S4["4. Создаёт primary Stage"]
+    S4 --> S5["5. Вызывает start(stage) ← JavaFX Application Thread"]
+    S5 --> LIVE["приложение живёт и обрабатывает события"]
+    LIVE --> S6["6. Закрыто последнее окно ИЛИ вызван Platform.exit()"]
+    S6 --> S7["7. Вызывает stop() ← JavaFX Application Thread"]
+    S7 --> S8["8. Завершает среду выполнения; управление возвращается в main()"]
 ```
 
 | Метод | Когда вызывается | В каком потоке | Что можно делать |
@@ -500,22 +499,22 @@ primaryStage.setScene(mainScene);
 
 Граф сцены окна с шапкой, таблицей и панелью ввода:
 
-```
-Scene
-└── BorderPane                (корневой узел, root)
-    ├── top:    Label         «Менеджер студентов»
-    ├── center: TableView
-    │           ├── TableColumn «ФИО»
-    │           ├── TableColumn «Группа»
-    │           └── TableColumn «Средний балл»
-    └── bottom: VBox
-                ├── GridPane
-                │   ├── Label «ФИО:»
-                │   └── TextField
-                ├── HBox
-                │   ├── Button «Добавить»
-                │   └── Button «Удалить»
-                └── Label     «Студентов в списке: 3»
+```mermaid
+flowchart TD
+    SCENE["Scene"] --> BP["BorderPane<br/>(корневой узел, root)"]
+    BP -- top --> LBL1["Label «Менеджер студентов»"]
+    BP -- center --> TV["TableView"]
+    TV --> TC1["TableColumn «ФИО»"]
+    TV --> TC2["TableColumn «Группа»"]
+    TV --> TC3["TableColumn «Средний балл»"]
+    BP -- bottom --> VBOX["VBox"]
+    VBOX --> GP["GridPane"]
+    GP --> LBL2["Label «ФИО:»"]
+    GP --> TF["TextField"]
+    VBOX --> HBOX["HBox"]
+    HBOX --> BTN1["Button «Добавить»"]
+    HBOX --> BTN2["Button «Удалить»"]
+    VBOX --> LBL3["Label «Студентов в списке: 3»"]
 ```
 
 Ровно эту структуру мы соберём в Части 14.
@@ -524,26 +523,59 @@ Scene
 
 Всё, что можно поместить на сцену, наследует абстрактный класс `javafx.scene.Node`:
 
-```
-Node                          — любой визуальный объект
-├── Canvas                    — холст для императивного рисования
-├── ImageView                 — изображение
-├── MediaView                 — видео
-├── Shape                     — геометрические фигуры
-│   ├── Rectangle, Circle, Ellipse, Line, Polygon
-│   └── Text                  — текст как фигура (не элемент управления!)
-└── Parent                    — узел, который МОЖЕТ иметь потомков
-    ├── Group                 — простой контейнер, раскладку не делает
-    └── Region                — узел с фоном, рамкой, отступами и раскладкой
-        ├── Pane              — панели компоновки
-        │   ├── VBox, HBox, StackPane, FlowPane, TilePane
-        │   └── BorderPane, GridPane, AnchorPane
-        └── Control           — готовые элементы управления
-            ├── Labeled → Label, ButtonBase → Button, CheckBox,
-            │             ToggleButton → RadioButton
-            ├── TextInputControl → TextArea, TextField → PasswordField
-            ├── ComboBoxBase → ComboBox, DatePicker, ColorPicker
-            └── ListView, TableView, TreeView, TabPane, ScrollPane
+```mermaid
+classDiagram
+    class Node { <<abstract>> }
+    Node <|-- Canvas
+    Node <|-- ImageView
+    Node <|-- MediaView
+    Node <|-- Shape
+    Shape <|-- Rectangle
+    Shape <|-- Circle
+    Shape <|-- Ellipse
+    Shape <|-- Line
+    Shape <|-- Polygon
+    Shape <|-- Text
+    Node <|-- Parent
+    Parent <|-- Group
+    Parent <|-- Region
+    Region <|-- Pane
+    Pane <|-- VBox
+    Pane <|-- HBox
+    Pane <|-- StackPane
+    Pane <|-- FlowPane
+    Pane <|-- TilePane
+    Pane <|-- BorderPane
+    Pane <|-- GridPane
+    Pane <|-- AnchorPane
+    Region <|-- Control
+    Control <|-- Labeled
+    Labeled <|-- Label
+    Control <|-- ButtonBase
+    ButtonBase <|-- Button
+    Control <|-- CheckBox
+    Control <|-- ToggleButton
+    ToggleButton <|-- RadioButton
+    Control <|-- TextInputControl
+    TextInputControl <|-- TextArea
+    TextInputControl <|-- TextField
+    TextField <|-- PasswordField
+    Control <|-- ComboBoxBase
+    ComboBoxBase <|-- ComboBox
+    ComboBoxBase <|-- DatePicker
+    ComboBoxBase <|-- ColorPicker
+    Control <|-- ListView
+    Control <|-- TableView
+    Control <|-- TreeView
+    Control <|-- TabPane
+    Control <|-- ScrollPane
+
+    note for Canvas "холст для императивного рисования"
+    note for ImageView "изображение"
+    note for MediaView "видео"
+    note for Text "текст как фигура (не элемент управления!)"
+    note for Group "простой контейнер, раскладку не делает"
+    note for Region "узел с фоном, рамкой, отступами и раскладкой — от него растут все панели и все элементы управления"
 ```
 
 Разделение принципиальное:
@@ -1099,15 +1131,17 @@ field.setOnKeyPressed(event -> {
 
 Аналогия: клиент подал жалобу на конкретного сотрудника. Сначала бумага спускается сверху вниз — от директора через начальника отдела к сотруднику (**фаза захвата**, capturing). Затем, если вопрос не решён на месте, поднимается обратно — от сотрудника к начальнику отдела и к директору (**фаза всплытия**, bubbling). Любой на этом пути может написать «вопрос закрыт» и остановить движение бумаги — это и есть `consume()`.
 
-```
-              ФАЗА ЗАХВАТА              ФАЗА ВСПЛЫТИЯ
-              (event filters)           (event handlers)
-
-  Scene              │                        ▲
-    │                ▼                        │
-  VBox               │                        ▲
-    │                ▼                        │
-  Button (цель) ─────┴────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant Scene
+    participant VBox
+    participant Button as Button (цель)
+    Note over Scene,Button: Фаза захвата (event filters) — сверху вниз
+    Scene->>VBox: захват
+    VBox->>Button: захват
+    Note over Scene,Button: Фаза всплытия (event handlers) — снизу вверх
+    Button-->>VBox: всплытие
+    VBox-->>Scene: всплытие
 ```
 
 - **Фильтры** (`addEventFilter`) срабатывают в фазе захвата — сверху вниз.
@@ -1658,22 +1692,16 @@ pane.getStylesheets().add(getClass().getResource("form.css").toExternalForm());
 
 ### 13.2 Поток управления
 
-```
-Пользователь нажал кнопку
-        │
-        ▼
-  VIEW (FXML)  ──onAction="#handleAdd"──►  CONTROLLER
-                                              │ 1. Считал значения полей
-                                              │ 2. Проверил корректность
-                                              ▼
-                                           MODEL (StudentService)
-                                              │ 3. Создал Student и добавил
-                                              │    его в ObservableList
-                                              ▼
-                                       ObservableList изменился
-                                              │
-                                              ▼
-                                    TableView обновилась САМА
+```mermaid
+flowchart TD
+    USER["Пользователь нажал кнопку"] --> VIEW["VIEW (FXML)"]
+    VIEW -- "onAction=&quot;#handleAdd&quot;" --> CTRL["CONTROLLER"]
+    CTRL --> S1["1. Считал значения полей"]
+    S1 --> S2["2. Проверил корректность"]
+    S2 --> MODEL["MODEL (StudentService)"]
+    MODEL --> S3["3. Создал Student и добавил его в ObservableList"]
+    S3 --> OBS["ObservableList изменился"]
+    OBS --> TV["TableView обновилась САМА"]
 ```
 
 Последний шаг — самая красивая часть. Контроллеру не нужно перерисовывать таблицу вручную: он изменил модель, а привязка данных из Части 9 сделала остальное.
