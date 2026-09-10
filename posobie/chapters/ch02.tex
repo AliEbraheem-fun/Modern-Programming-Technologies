@@ -1,0 +1,1701 @@
+\chapter{Основные конструкции языка Java}
+\label{ch:02}
+
+В главе~\ref{ch:01} мы разобрали, как устроена платформа и из чего складывается
+система типов. Теперь речь пойдёт о том, из каких кирпичей собирается сама
+программа. Прочитав главу, вы научитесь описывать классы со всеми их
+составными частями, отличать абстрактный класс от интерфейса и понимать, когда
+нужен каждый из них, работать с массивами и строками, не наступая на классические
+грабли, объявлять компактные типы данных через \texttt{record} и \texttt{enum},
+читать чужие аннотации и писать свои, заменять громоздкие анонимные классы
+лямбда-выражениями и, наконец, корректно считать даты и время. Это самая
+объёмная глава курса: почти всё, что будет дальше~--- коллекции, потоки, Spring,
+веб~--- опирается на перечисленные конструкции.
+
+\section{Класс: поля, методы и блоки инициализации}
+
+\term{Класс}~--- это шаблон, чертёж, по которому создаются объекты. Если
+объект~--- конкретный дом, то класс~--- архитектурный план: по одному плану
+строят целый посёлок, и все дома получаются одинаковыми по устройству, но
+разными по адресу и цвету стен.
+
+Класс может содержать \term{поля} (данные объекта), \term{методы} (его
+поведение), \term{конструкторы}, \term{блоки инициализации}, статические
+элементы, принадлежащие классу целиком, вложенные классы и аннотации.
+Наследовать класс может ровно один другой класс (через \texttt{extends}), а
+реализовывать~--- сколько угодно интерфейсов (через \texttt{implements}).
+
+Чтобы увидеть все эти части сразу, разберём намеренно перегруженный пример~---
+класс умного устройства (листинг~\ref{lst:02-1}). Смотрите не на логику, а на
+состав: где поле экземпляра, где статическое поле, где константа, где два
+разных блока инициализации.
+
+\begin{listing}[H]
+\begin{minted}{java}
+abstract class Device {
+    public abstract void turnOn();
+}
+
+interface Connectable { void connect(); }
+interface Updatable   { void updateFirmware(); }
+
+public class SmartDevice extends Device
+        implements Connectable, Updatable {
+
+    private String modelName;           // поле экземпляра
+    private boolean isConnected;
+    public static int deviceCount = 0;  // общее для всех объектов
+    public static final String MANUFACTURER = "SmartTech";
+
+    static {          // один раз при загрузке класса в память
+        System.out.println("Класс SmartDevice загружен");
+    }
+
+    {                 // при каждом создании объекта
+        deviceCount++;
+    }
+
+    public SmartDevice(String modelName) {
+        this.modelName = modelName;
+        this.isConnected = false;
+    }
+
+    public void turnOn() {
+        System.out.println(modelName + " включено");
+    }
+
+    @Override public void connect() { isConnected = true; }
+
+    @Override public void updateFirmware() {
+        System.out.println(modelName + ": прошивка обновлена");
+    }
+
+    public String getModelName() { return modelName; }
+
+    public static int getTotal() { return deviceCount; }  // static
+
+    public static class FirmwareVersion { // вложенный класс
+        private final String version;
+        FirmwareVersion(String v) { this.version = v; }
+    }
+}
+\end{minted}
+\caption{Класс со всеми основными видами элементов}
+\label{lst:02-1}
+\end{listing}
+
+В коде связи класса разбросаны по разным строкам, и заголовок объявления
+приходится читать по частям. Схема на рис.~\ref{fig:02-1} сводит их вместе:
+сплошная стрелка~--- наследование от абстрактного класса, пунктирная~---
+реализация интерфейса, а линия без наконечника соединяет внешний класс с
+вложенным.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\scriptsize,
+  cls/.style={draw,rounded corners=2pt,align=left,inner sep=4pt}]
+\node[cls,text width=33mm] (dev) at (0,0)
+  {\textbf{Device}\\\textit{абстрактный класс}\\\texttt{turnOn()}};
+\node[cls,text width=33mm] (con) at (4.1,0)
+  {\textbf{Connectable}\\\textit{интерфейс}\\\texttt{connect()}};
+\node[cls,text width=33mm] (upd) at (8.2,0)
+  {\textbf{Updatable}\\\textit{интерфейс}\\\texttt{updateFirmware()}};
+\node[cls,text width=95mm] (sd) at (4.1,-2.7)
+  {\textbf{SmartDevice}\\
+   \texttt{-\,modelName}, \texttt{-\,isConnected}\\
+   \texttt{+\,deviceCount}, \texttt{+\,MANUFACTURER} (\texttt{static})\\
+   \texttt{+\,turnOn()}, \texttt{+\,connect()}, \texttt{+\,updateFirmware()}};
+\node[cls,text width=46mm] (fw) at (4.1,-4.6)
+  {\textbf{FirmwareVersion}\\\textit{вложенный static-класс}\\
+   \texttt{-\,version}};
+\draw[-Latex] ([xshift=-33mm]sd.north)--(dev.south);
+\draw[-Latex,dashed] (sd.north)--(con.south);
+\draw[-Latex,dashed] ([xshift=33mm]sd.north)--(upd.south);
+\draw[gray] (fw.north)--(sd.south);
+\end{tikzpicture}
+\caption{Устройство класса \texttt{SmartDevice} и его связи}\label{fig:02-1}
+\end{figure}
+
+Разберём элементы по порядку. \term{Поле экземпляра} (\texttt{modelName})
+принадлежит каждому объекту отдельно: у двух устройств два разных названия.
+\term{Статическое поле} (\texttt{deviceCount}) существует в единственном
+экземпляре на весь класс~--- это общий счётчик, который видят все объекты, а
+\term{константа} объявляется как \texttt{static final}. \term{Статический
+блок} \texttt{static \{...\}} выполняется один раз, когда загрузчик классов
+приносит класс в память; \term{блок инициализации экземпляра}
+\texttt{\{...\}}~--- при каждом создании объекта, до тела конструктора.
+\term{Конструктор} раскладывает переданные значения по полям, а
+\term{вложенный класс} живёт внутри внешнего и удобен, когда отдельный файл
+заводить не за что.
+
+\subsection{Модификаторы доступа}
+
+Модификаторы доступа отвечают на вопрос «кому виден этот элемент». Их
+четыре, и выстроены они от самого закрытого к самому открытому
+(табл.~\ref{tab:02-1}). Каждый следующий уровень добавляет видимость для более
+широкого круга, ничего не отнимая у предыдущего.
+
+\begin{table}[htbp]
+\caption{Модификаторы доступа и области видимости}
+\label{tab:02-1}
+\centering
+\begin{tabular}{L{4.2cm}C{2.6cm}C{2.6cm}C{2.4cm}C{2.2cm}}
+\toprule
+Модификатор & В том же классе & В том же пакете & В подклассе & Везде \\
+\midrule
+\texttt{private} & да & --- & --- & --- \\
+без модификатора & да & да & --- & --- \\
+\texttt{protected} & да & да & да & --- \\
+\texttt{public} & да & да & да & да \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{oshibka}
+\textbf{Частая ошибка: отсутствие модификатора~--- это не \texttt{public}.}
+Поле или метод без модификатора получают доступ уровня пакета
+(\eng{package-private}) и видны только классам того же пакета. Код прекрасно
+компилируется, пока вызывающий и вызываемый лежат в одной папке, и перестаёт
+компилироваться сразу после того, как вы разложите классы по пакетам.
+\end{oshibka}
+
+\subsection{Ключевое слово var}
+
+Начиная с Java~10 тип локальной переменной можно не писать: компилятор выведет
+его из правой части выражения. Ключевое слово \texttt{var} экономит буквы там,
+где тип и так очевиден (листинг~\ref{lst:02-2}), но с ним связано ровно три
+правила, которые придётся запомнить.
+
+\begin{listing}[H]
+\begin{minted}{java}
+var device = new SmartDevice("Phone"); // выведен SmartDevice
+var name = device.getModelName();      // выведен String
+var numbers = new int[] {1, 2, 3};     // выведен int[]
+
+// var x;              // ошибка: нет инициализатора
+// var y = null;       // ошибка: тип вывести не из чего
+// void run(var arg)   // ошибка: только локальные переменные
+\end{minted}
+\caption{Ключевое слово var и его ограничения}
+\label{lst:02-2}
+\end{listing}
+
+Правила таковы: \texttt{var} допустим только для локальных переменных~--- не
+для полей класса, параметров и возвращаемых типов; переменная обязана быть
+инициализирована в момент объявления; и главное~--- это не динамическая
+типизация. Тип фиксируется при компиляции раз и навсегда, просто пишет его за
+вас компилятор. Пользуйтесь \texttt{var}, когда тип виден справа, и не
+пользуйтесь, когда справа стоит вызов метода с неочевидным результатом:
+читателю кода придётся лезть в объявление этого метода.
+
+\section{Абстрактные классы и запечатанные иерархии}
+
+\term{Абстрактный класс} объявляется словом \texttt{abstract} и отличается от
+обычного одним свойством: создать его объект оператором \texttt{new} нельзя. Он
+существует, чтобы собрать в одном месте всё общее для группы родственных
+классов~--- поля, конструктор, готовые методы,~--- и одновременно потребовать
+от наследников то, чего сам сделать не может. Такое требование оформляется
+\term{абстрактным методом}: у него есть сигнатура, но нет тела.
+
+Аналогия проста. «Животное вообще» не существует~--- существуют собака,
+попугай, кошка. Но у любого животного есть имя, любое животное спит, и любое
+издаёт звук~--- только каждое свой. Первые два свойства идут в абстрактный
+класс с готовым кодом, третье~--- абстрактным методом
+(листинг~\ref{lst:02-3}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+interface Trainable {
+    void train();                       // абстрактный метод
+    default void praise() {             // метод по умолчанию
+        System.out.println("Молодец!");
+    }
+}
+
+abstract class Animal implements Trainable {
+    protected String name;
+
+    public Animal(String name) { this.name = name; }
+
+    public void sleep() {               // общий готовый код
+        System.out.println(name + " спит");
+    }
+
+    // наследник обязан реализовать оба метода
+    public abstract void makeSound();
+    protected abstract void move();
+}
+
+class Dog extends Animal {
+    public Dog(String name) { super(name); }
+
+    @Override public void makeSound() {
+        System.out.println(name + " говорит: Гав!");
+    }
+    @Override protected void move() { /* ... */ }
+    @Override public void train() { /* ... */ }
+}
+
+// Animal a = new Animal(...); // ошибка: класс абстрактный
+Animal dog = new Dog("Шарик");     // а так можно
+dog.makeSound();
+dog.praise();                      // метод по умолчанию
+\end{minted}
+\caption{Интерфейс, абстрактный класс и его наследник}
+\label{lst:02-3}
+\end{listing}
+
+Иерархия из примера показана на рис.~\ref{fig:02-2}. Обратите внимание на
+последние две строки листинга: переменная объявлена типом \texttt{Animal}, а
+хранит объект \texttt{Dog}, и вызов \texttt{makeSound()} уходит в реализацию
+собаки. Это \term{полиморфизм}~--- один и тот же вызов ведёт себя по-разному в
+зависимости от того, какой объект на самом деле лежит в переменной.
+
+\begin{figure}[htbp]\centering
+\begin{forest} hierarchy
+[Trainable
+  [Animal
+    [Dog]
+  ]
+]
+\end{forest}
+\caption{Иерархия: интерфейс, абстрактный класс и его наследник}
+\label{fig:02-2}
+\end{figure}
+
+\subsection{Sealed-классы}
+
+Обычный класс наследует кто угодно, \texttt{final}-класс~--- никто.
+\term{Запечатанный класс} (\eng{sealed}, появился в Java~17) занимает место
+между ними: он перечисляет своих наследников поимённо в списке \texttt{permits},
+и никто, кроме них, расширить его не может. Это способ описать закрытый набор
+вариантов: фигура бывает кругом, прямоугольником или треугольником~--- и
+ничем больше.
+
+Каждый наследник обязан явно сказать, что делать с иерархией дальше:
+\texttt{final} обрывает цепочку, \texttt{sealed} продолжает её со своим списком
+\texttt{permits}, \texttt{non-sealed} снимает ограничение. Записи
+(\texttt{record}) неявно \texttt{final}, поэтому годятся без дополнительных
+слов (листинг~\ref{lst:02-4}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+sealed interface Shape permits Circle, Rectangle, Triangle {
+    double area();
+}
+
+record Circle(double radius) implements Shape {
+    public double area() { return Math.PI * radius * radius; }
+}
+
+record Rectangle(double w, double h) implements Shape {
+    public double area() { return w * h; }
+}
+
+// non-sealed снимает ограничение на наследование
+non-sealed class Triangle implements Shape {
+    double base, height;                  // конструктор опущен
+    public double area() { return 0.5 * base * height; }
+}
+
+static String describe(Shape shape) {
+    return switch (shape) {
+        case Circle c    -> "Круг r = " + c.radius();
+        case Rectangle r -> "Прямоугольник " + r.w() + "x" + r.h();
+        case Triangle t  -> "Треугольник";
+        // default не нужен: компилятор знает все варианты
+    };
+}
+\end{minted}
+\caption{Запечатанный интерфейс и его наследники}
+\label{lst:02-4}
+\end{listing}
+
+Главная выгода запечатывания видна в последнем методе. Компилятор знает полный
+список наследников (рис.~\ref{fig:02-3}) и проверяет, что \texttt{switch}
+разобрал все случаи; ветка \texttt{default} не нужна. А если завтра в иерархию
+добавят четвёртую фигуру, код перестанет компилироваться~--- и вы узнаете об
+этом на сборке, а не от пользователя. Учтите разницу версий: само слово
+\texttt{sealed} доступно с Java~17, а \texttt{switch} по образцам типа
+(\texttt{case Circle c ->})~--- только с Java~21; на JDK~17 этот метод не
+скомпилируется.
+
+\begin{figure}[htbp]\centering
+\begin{forest} hierarchy
+[Shape
+  [Circle]
+  [Rectangle]
+  [Triangle]
+]
+\end{forest}
+\caption{Закрытая иерархия запечатанного интерфейса \texttt{Shape}}
+\label{fig:02-3}
+\end{figure}
+
+\section{Интерфейсы}
+
+\term{Интерфейс} описывает, \emph{что} объект умеет делать, не говоря ни слова
+о том, \emph{как} он это делает. Это контракт: класс, написавший
+\texttt{implements}, обязуется предоставить все перечисленные методы.
+
+Из такой природы вытекают ограничения, о которых легко забыть по привычке от
+обычных классов. Методы интерфейса по умолчанию \texttt{public abstract};
+поля могут быть только константами \texttt{public static final}, потому что
+интерфейс не хранит состояния; конструкторов у него нет. Зато класс может
+реализовать сколько угодно интерфейсов, а сам интерфейс~--- наследовать другие
+интерфейсы через \texttt{extends}. С Java~8 у интерфейса появились методы с
+реализацией: \term{default-методы}, которые наследуются классами и при желании
+переопределяются, и \term{static-методы}, вызываемые прямо на интерфейсе. С
+Java~9 добавились \term{private-методы}~--- для общего кода, который
+default-методы используют внутри и наружу отдавать не хотят.
+
+Отдельно стоят два вида интерфейсов. \term{Маркерный интерфейс} не объявляет
+ничего и служит меткой принадлежности к категории~--- таковы
+\texttt{Serializable} и \texttt{Cloneable}. \term{Функциональный интерфейс}
+содержит ровно один абстрактный метод; именно такие интерфейсы реализуют
+лямбда-выражением, и помечают их аннотацией \texttt{@FunctionalInterface}.
+
+Всё перечисленное собрано в листинге~\ref{lst:02-5}: интерфейс
+\texttt{Movable} демонстрирует четыре вида методов сразу, а класс
+\texttt{Robot} получает их не напрямую, а через промежуточный интерфейс.
+
+\begin{listing}[H]
+\begin{minted}{java}
+interface Movable {
+    int MAX_SPEED = 120;         // public static final
+
+    void move();                 // public abstract
+
+    default void stop() {        // с реализацией, переопределяем
+        System.out.println("Объект остановлен");
+        log("вызван stop()");
+    }
+
+    static void info() {         // вызывается на интерфейсе
+        System.out.println("Movable описывает движение");
+    }
+
+    private void log(String message) {   // только внутри
+        System.out.println("ЛОГ: " + message);
+    }
+}
+
+interface Powered {
+    void turnOn();
+}
+
+// интерфейс наследует сразу два интерфейса
+interface SmartMachine extends Movable, Powered {
+    void connectToWiFi();
+}
+
+class Robot implements SmartMachine {
+    @Override public void move() { /* ... */ }
+    @Override public void turnOn() { /* ... */ }
+    @Override public void connectToWiFi() { /* ... */ }
+
+    @Override public void stop() {       // переопределили default
+        System.out.println("Робот остановлен");
+    }
+}
+
+Movable.info();                  // статический метод интерфейса
+System.out.println(Movable.MAX_SPEED);
+\end{minted}
+\caption{Четыре вида методов интерфейса и множественное наследование}
+\label{lst:02-5}
+\end{listing}
+
+Проследите цепочку наследования по объявлениям класса \texttt{Robot}. Метод
+\texttt{connectToWiFi()} он получает из \texttt{SmartMachine}, а
+\texttt{move()} и \texttt{turnOn()}~--- из двух независимых интерфейсов,
+объединённых на уровень выше.
+
+\begin{oshibka}
+\textbf{Частая ошибка: конфликт default-методов.} Если класс реализует два
+интерфейса, в каждом из которых есть \texttt{default}-метод с одинаковой
+сигнатурой, код не скомпилируется: компилятор не выбирает за вас. Придётся
+переопределить метод в классе и явно указать нужную реализацию через
+\texttt{A.super.hello()} или \texttt{B.super.hello()}.
+\end{oshibka}
+
+\subsection{Абстрактный класс или интерфейс?}
+
+Это один из самых частых вопросов на экзамене, и ответ на него даёт
+табл.~\ref{tab:02-2}. Ключевых различий два: наследовать класс можно только
+один, а интерфейсов реализовать сколько угодно; и абстрактный класс умеет
+хранить состояние в изменяемых полях, а интерфейс~--- нет.
+
+\begin{table}[htbp]
+\caption{Абстрактный класс и интерфейс}
+\label{tab:02-2}
+\centering
+\begin{tabular}{L{3.8cm}L{5.4cm}L{5.4cm}}
+\toprule
+Критерий & Абстрактный класс & Интерфейс \\
+\midrule
+Наследование & только один (\texttt{extends}) & сколько угодно
+  (\texttt{implements}) \\
+Поля & любые, в том числе изменяемые & только константы \\
+Конструкторы & есть & нет \\
+Состояние & хранит & не хранит \\
+Методы с телом & обычные методы & \texttt{default} и \texttt{static} \\
+Когда брать & общий код и данные родственных классов & контракт для
+  разнородных классов \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Практическое правило формулируется через связку слов. Если между типами
+отношение «является» (собака \emph{является} животным) и у них есть общий
+код~--- берите абстрактный класс. Если отношение «умеет» (робот \emph{умеет}
+двигаться) и объединить надо разнородные типы~--- берите интерфейс.
+
+\section{Массивы}
+
+\term{Массив}~--- структура для хранения фиксированного числа элементов одного
+типа. Ключевых свойств у него пять: все элементы однородны; размер задаётся при
+создании и больше не меняется; индексация идёт от нуля до \texttt{length - 1};
+доступ по индексу выполняется за одно действие независимо от длины массива;
+и, наконец, массив в Java~--- это объект, у которого есть поле
+\texttt{length} (именно поле, а не метод, в отличие от строк).
+
+Объявить массив можно тремя способами, и один из них лучше не использовать
+(листинг~\ref{lst:02-6}). Квадратные скобки после имени переменной Java
+унаследовала от языка~C; такая запись сбивает читателя с толку.
+
+\begin{listing}[H]
+\begin{minted}{java}
+int numbers[] = new int[5];           // стиль C, не используйте
+String[] names = new String[] {"Alice", "Bob"};  // стиль Java
+double[] prices = {19.99, 9.99};      // краткая форма
+
+int[][] grid = {{1, 2}, {3, 4}};      // прямоугольная таблица
+
+int[][] jagged = new int[3][];        // зубчатый массив
+jagged[0] = new int[] {1, 2};
+jagged[1] = new int[] {6};
+jagged[2] = new int[] {3, 4, 5};
+
+for (int i = 0; i < numbers.length; i++) {  // классический цикл
+    numbers[i] = i * 10;
+}
+for (String name : names) {                 // цикл for-each
+    System.out.println(name);
+}
+\end{minted}
+\caption{Способы объявления и создания массивов}
+\label{lst:02-6}
+\end{listing}
+
+Краткая форма \texttt{\{19.99, 9.99\}} работает только в момент объявления:
+при последующем присваивании нужен полный вариант с \texttt{new}. Как
+одномерный массив выглядит в памяти, показано на рис.~\ref{fig:02-4}:
+переменная лежит в стеке и хранит ссылку, а сами элементы~--- непрерывный блок
+в куче.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\footnotesize,
+  cell/.style={draw,minimum width=13mm,minimum height=8mm}]
+\node[draw,rounded corners=8pt] (a) at (0,0){\texttt{arr}};
+\node[cell] (c0) at (3.2,0){\texttt{10}};
+\node[cell] (c1) at (4.6,0){\texttt{20}};
+\node[cell] (c2) at (6.0,0){\texttt{30}};
+\node[font=\scriptsize,below=0.5mm of c0] (i0){\texttt{[0]}};
+\node[font=\scriptsize,below=0.5mm of c1]{\texttt{[1]}};
+\node[font=\scriptsize,below=0.5mm of c2] (i2){\texttt{[2]}};
+\begin{scope}[on background layer]
+\node[draw,dashed,fit=(c0)(c2)(i0)(i2),inner sep=3mm] (h){};
+\end{scope}
+\node[font=\scriptsize,above=0.5mm of h]{куча: \texttt{length = 3}};
+\draw[-Latex] (a)--(c0);
+\end{tikzpicture}
+\caption{Одномерный массив \texttt{int[] arr = \{10, 20, 30\}} в памяти}
+\label{fig:02-4}
+\end{figure}
+
+Зубчатый массив устроен иначе. Это массив ссылок: каждый его элемент~---
+самостоятельная ссылка на отдельный массив в куче, и длины у этих массивов
+могут не совпадать. Именно поэтому во вложенном цикле пишут
+\texttt{jagged[i].length}, а не общую длину строки.
+
+\begin{oshibka}
+\textbf{Три классические ошибки с массивами.} Первая~--- обращение за границу:
+у массива из трёх элементов индексы 0, 1 и 2, а \texttt{arr[3]} даёт
+\texttt{ArrayIndexOutOfBoundsException}. Вторая~--- массив объектов создан, но
+не заполнен: после \texttt{new String[3]} все три элемента равны
+\texttt{null}, и вызов \texttt{names[0].length()} обернётся
+\texttt{NullPointerException}. Третья~--- попытка изменить размер: если число
+элементов заранее неизвестно, нужен \texttt{ArrayList}.
+\end{oshibka}
+
+\subsection{Класс java.util.Arrays}
+
+Массив~--- минималистичный объект: поле \texttt{length}, доступ по индексу и
+больше ничего. Сортировка, поиск, сравнение и печать вынесены в
+класс-утилиту \texttt{java.util.Arrays}, состоящий из статических методов
+(табл.~\ref{tab:02-3}).
+
+\begin{table}[htbp]
+\caption{Основные методы класса \texttt{java.util.Arrays}}
+\label{tab:02-3}
+\centering
+\begin{tabular}{L{5.6cm}L{8.8cm}}
+\toprule
+Метод & Что делает \\
+\midrule
+\texttt{toString(arr)} & строковое представление одномерного массива \\
+\texttt{deepToString(arr)} & то же для многомерного массива \\
+\texttt{sort(arr)} & сортирует массив по возрастанию на месте \\
+\texttt{binarySearch(arr, k)} & двоичный поиск; массив обязан быть отсортирован \\
+\texttt{fill(arr, value)} & заполняет весь массив одним значением \\
+\texttt{copyOf(arr, len)} & копия нужной длины: обрезает или дополняет \\
+\texttt{equals(a, b)} & поэлементное сравнение одномерных массивов \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Начнём с печати, потому что здесь спотыкаются все. Массив~--- объект, и
+\texttt{System.out.println(arr)} вызывает унаследованный от \texttt{Object}
+метод \texttt{toString()}, который печатает тип и хеш-код вроде
+\texttt{[I@1b6d3586}, а вовсе не содержимое. Остальные типичные операции
+собраны в листинге~\ref{lst:02-7}. В последних его строках встретятся
+\texttt{List}~--- интерфейс списка переменной длины~--- и \texttt{ArrayList},
+его основная реализация; коллекции разбираются в главе~\ref{ch:05}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+int[] arr = {3, 1, 2};
+System.out.println(arr);                  // [I@1b6d3586
+System.out.println(Arrays.toString(arr)); // [3, 1, 2]
+
+int[][] matrix = {{1, 2}, {3, 4}};
+System.out.println(Arrays.deepToString(matrix)); // [[1, 2], [3, 4]]
+
+int[] numbers = {5, 3, 1, 4, 2};
+Arrays.sort(numbers);                     // [1, 2, 3, 4, 5]
+int index = Arrays.binarySearch(numbers, 4);  // 3
+Arrays.fill(numbers, 7);                  // [7, 7, 7, 7, 7]
+int[] longer = Arrays.copyOf(numbers, 7); // хвост нулями
+
+int[] a = {1, 2, 3}, b = {1, 2, 3};
+System.out.println(a == b);               // false: разные объекты
+System.out.println(Arrays.equals(a, b));  // true: содержимое равно
+
+// ловушка: список фиксированного размера поверх массива
+List<String> list = Arrays.asList("A", "B", "C");
+list.set(0, "Z");   // можно
+// list.add("D");   // UnsupportedOperationException
+List<String> real = new ArrayList<>(Arrays.asList("A", "B"));
+\end{minted}
+\caption{Работа с массивами через класс Arrays}
+\label{lst:02-7}
+\end{listing}
+
+Два предупреждения. \texttt{binarySearch} на неотсортированном массиве вернёт
+случайный индекс, не сообщив об ошибке. А \texttt{Arrays.asList} возвращает не
+\texttt{ArrayList},
+а обёртку фиксированного размера вокруг исходного массива: заменять элементы
+она позволяет, добавлять и удалять~--- нет.
+
+\section{Строки}
+
+\texttt{String}~--- класс, представляющий \term{неизменяемую}
+(\eng{immutable}) последовательность символов Unicode. Неизменяемость означает
+буквально следующее: ни один метод строки не меняет её содержимое, любая
+операция «изменения» возвращает новый объект. Отсюда самая частая ошибка
+новичка~--- вызвать метод и не сохранить результат.
+
+Создать строку можно литералом, оператором \texttt{new}, из массива символов
+или байтов, а с Java~15~--- ещё и текстовым блоком в тройных кавычках, который
+сохраняет переносы строк как есть. Наиболее ходовые методы приведены в
+табл.~\ref{tab:02-4}; каждый из них возвращает новую строку или новое значение,
+не трогая исходную.
+
+\begin{table}[htbp]
+\caption{Часто используемые методы класса \texttt{String}}
+\label{tab:02-4}
+\centering
+\footnotesize
+\begin{tabular}{L{4.0cm}L{4.4cm}L{5.6cm}}
+\toprule
+Метод & Что делает & Пример \\
+\midrule
+\texttt{length()} & длина строки & \texttt{"Java".length()} $\to$ \texttt{4} \\
+\texttt{charAt(i)} & символ по индексу & \texttt{"Java".charAt(0)} $\to$ \texttt{'J'} \\
+\texttt{substring(a, b)} & подстрока от \texttt{a} включительно до \texttt{b} исключая & \texttt{"Hello".substring(1, 3)} $\to$ \texttt{"el"} \\
+\texttt{indexOf(s)} & позиция первого вхождения & \texttt{"Java".indexOf("a")} $\to$ \texttt{1} \\
+\texttt{contains(s)} & есть ли подстрока & \texttt{"Java".contains("av")} $\to$ \texttt{true} \\
+\texttt{replace(a, b)} & замена подстроки & \texttt{"Java".replace("J", "K")} $\to$ \texttt{"Kava"} \\
+\texttt{toLowerCase()} & перевод в нижний регистр & \texttt{"Java".toLowerCase()} $\to$ \texttt{"java"} \\
+\texttt{split(regex)} & разбиение на массив & \texttt{"a b c".split("~")} $\to$ три слова \\
+\texttt{trim()} & убирает пробелы по краям & \texttt{"~hi~".trim()} $\to$ \texttt{"hi"} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Аргумент методов \texttt{split} и \texttt{replaceAll}~--- не обычная строка, а
+\term{регулярное выражение} (\eng{regular expression}), то есть шаблон поиска.
+Для практикума хватит двух образцов:
+\texttt{"\textbackslash\textbackslash s+"}~--- «одна или больше пробельных
+литер», а \texttt{"[\textasciicircum а-яА-Яa-zA-Z]"}~--- «любой символ, кроме
+буквы».
+
+\subsection{Пул строк и сравнение}
+
+\term{Пул строк} (\eng{String Pool})~--- особая область внутри кучи, где
+виртуальная машина хранит уникальные строковые литералы. Смысл её чисто
+экономический: если в программе сто раз встречается литерал
+\texttt{"Hello"}, объект создаётся один. Встретив литерал, JVM ищет такую
+строку в пуле и либо возвращает ссылку на найденную, либо создаёт новую и
+кладёт туда. А вот \texttt{new String("Hello")} пул демонстративно обходит и
+всегда создаёт отдельный объект в обычной куче. Что при этом происходит с
+памятью, показывает рис.~\ref{fig:02-5}: две переменные-литерала указывают на
+один объект в пуле, а две переменные, созданные через \texttt{new},~--- на два
+разных объекта рядом.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\footnotesize,
+  vr/.style={draw,rounded corners=7pt,minimum width=12mm,minimum height=6mm},
+  ob/.style={draw,minimum width=30mm,minimum height=7mm}]
+\node[vr] (s1) at (0,0){\texttt{s1}};
+\node[vr] (s2) at (0,-0.9){\texttt{s2}};
+\node[vr] (s3) at (0,-1.8){\texttt{s3}};
+\node[vr] (s4) at (0,-2.7){\texttt{s4}};
+\node[ob] (p) at (6,-0.45){\texttt{"Test"}};
+\node[ob] (h3) at (6,-1.8){\texttt{"Test"} (новый)};
+\node[ob] (h4) at (6,-2.7){\texttt{"Test"} (новый)};
+\begin{scope}[on background layer]
+\node[draw,dashed,fit=(p),inner sep=3mm] (pool){};
+\node[draw,fit=(pool)(h3)(h4),inner sep=7mm] (heap){};
+\end{scope}
+\node[font=\scriptsize,above=0.5mm of pool]{String Pool};
+\node[font=\scriptsize,below=0.5mm of heap]{куча};
+\node[font=\scriptsize,above=0.5mm of s1]{стек};
+\draw[-Latex] (s1)--(p);\draw[-Latex] (s2)--(p);
+\draw[-Latex] (s3)--(h3);\draw[-Latex] (s4)--(h4);
+\end{tikzpicture}
+\caption{Литералы в пуле строк и объекты, созданные оператором \texttt{new}}
+\label{fig:02-5}
+\end{figure}
+
+Из этой картинки прямо следуют результаты сравнений
+(листинг~\ref{lst:02-8}). Оператор \texttt{==} отвечает на вопрос «это один и
+тот же объект?», а метод \texttt{equals} сравнивает содержимое~--- именно он
+почти всегда и нужен.
+
+\begin{listing}[H]
+\begin{minted}{java}
+String s1 = "Test";              // создан в пуле
+String s2 = "Test";              // найден в пуле: та же ссылка
+String s3 = new String("Test");  // новый объект в куче
+String s4 = new String("Test");  // ещё один новый объект
+
+System.out.println(s1 == s2);       // true
+System.out.println(s1 == s3);       // false
+System.out.println(s3 == s4);       // false
+System.out.println(s1.equals(s3));  // true: содержимое совпадает
+
+String s5 = s3.intern();         // вернёт ссылку из пула
+System.out.println(s1 == s5);       // true
+
+String a = "Hel" + "lo";         // склеено компилятором -> пул
+String half = "Hel";
+String b = half + "lo";          // склеено при выполнении -> куча
+System.out.println("Hello" == a);   // true
+System.out.println("Hello" == b);   // false
+\end{minted}
+\caption{Пул строк, оператор == и метод equals}
+\label{lst:02-8}
+\end{listing}
+
+Метод \texttt{intern()} возвращает ссылку на строку из пула, добавляя её туда
+при необходимости. Отдельного внимания заслуживают последние четыре строки:
+конкатенация двух литералов вычисляется компилятором и попадает в пул готовым
+литералом, а конкатенация с участием переменной выполняется во время работы
+программы и создаёт объект в обычной куче.
+
+\begin{vrezka}
+\textbf{Запомните правило.} Содержимое строк всегда сравнивайте методом
+\texttt{equals}, а оператор \texttt{==} применяйте к строкам только при
+проверке на \texttt{null}, потому что у \texttt{null} нельзя вызвать ни один
+метод.
+\end{vrezka}
+
+\begin{vrezka}
+\textbf{Попробуйте в jshell.} Всё сказанное проверяется за полминуты, без
+файла и класса. Наберите \texttt{String a = "Test"},
+\texttt{String b = "Test"}, \texttt{a == b}~--- получите \texttt{true}. Затем
+\texttt{String c = new String("Test")}: теперь \texttt{a == c} даёт
+\texttt{false}, а \texttt{a.equals(c)}~--- снова \texttt{true}. Наконец
+выполните \texttt{a.toUpperCase()} и сразу же \texttt{a}: строка не
+изменилась~--- метод вернул новый объект, а старый не тронул.
+\end{vrezka}
+
+\subsection{StringBuilder и StringBuffer}
+
+Поскольку строка неизменяема, каждая конкатенация создаёт новый объект. Внутри
+цикла это превращается в тысячи промежуточных объектов, которые тут же
+становятся мусором. Изменяемая альтернатива~--- \texttt{StringBuilder}: он
+держит один внутренний буфер и дописывает в него (листинг~\ref{lst:02-9}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// медленно: около 10 000 промежуточных объектов
+String slow = "";
+for (int i = 0; i < 10_000; i++) {
+    slow += i;
+}
+
+// быстро: один объект, изменяемый внутри
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 10_000; i++) {
+    sb.append(i);
+}
+String fast = sb.toString();
+
+// ошибка: результат метода потерян
+String s = "hello";
+s.toUpperCase();
+System.out.println(s);        // осталось hello
+s = s.toUpperCase();          // правильно
+System.out.println(s);        // HELLO
+\end{minted}
+\caption{Конкатенация в цикле: String против StringBuilder}
+\label{lst:02-9}
+\end{listing}
+
+У \texttt{StringBuilder} есть потокобезопасный близнец~---
+\texttt{StringBuffer}: все его методы объявлены \texttt{synchronized}, поэтому
+им можно пользоваться из нескольких потоков, но за синхронизацию приходится
+платить скоростью. Правило выбора простое: строка не меняется~---
+\texttt{String}; меняется часто в одном потоке~--- \texttt{StringBuilder};
+меняется из нескольких потоков~--- \texttt{StringBuffer}.
+
+\section{Записи и перечисления}
+
+\subsection{Записи (record)}
+
+\term{Запись} (\texttt{record}, появилась в Java~16)~--- специальный вид класса
+для хранения неизменяемых данных. Достаточно перечислить типы и имена полей, а
+конструктор, геттеры, \texttt{equals()}, \texttt{hashCode()} и
+\texttt{toString()} компилятор сгенерирует сам. То, что для обычного
+неизменяемого класса занимает сорок строк, здесь занимает одну.
+
+Записи не могут наследоваться от классов (они неявно \texttt{final}), но
+свободно реализуют интерфейсы, содержат дополнительные и статические методы.
+Геттеры называются не \texttt{getName()}, а просто \texttt{name()}~--- по имени
+поля (листинг~\ref{lst:02-10}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+public record Person(String name, int age) {
+
+    // компактный конструктор: скобок с параметрами нет
+    public Person {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Имя пустое");
+        }
+        if (age < 0) {
+            throw new IllegalArgumentException("Возраст < 0");
+        }
+        name = name.trim();   // запишется в поле автоматически
+    }
+
+    public String greet() { return "Меня зовут " + name; }
+}
+
+Person p1 = new Person("Alice", 30);
+System.out.println(p1.name());          // Alice
+System.out.println(p1);                 // Person[name=Alice, age=30]
+
+Person p2 = new Person("Alice", 30);
+System.out.println(p1.equals(p2));      // true: сравнение по полям
+
+new Person("  Bob  ", 25);              // имя станет Bob
+// new Person("", 20);                  // IllegalArgumentException
+\end{minted}
+\caption{Запись, её методы и компактный конструктор}
+\label{lst:02-10}
+\end{listing}
+
+Отдельно стоит \term{компактный конструктор}~--- форма записи без круглых
+скобок с параметрами. Он выполняется до присваивания полей, поэтому годится и
+для проверки данных, и для их нормализации: изменённое значение параметра
+попадёт в поле автоматически, писать \texttt{this.name = name} не нужно.
+Именно так в записи добавляют валидацию, не теряя её краткости.
+
+\subsection{Перечисления (enum)}
+
+\term{Перечисление} задаёт фиксированный набор именованных констант, каждая из
+которых~--- полноценный объект. Все константы неявно \texttt{public static
+final}; сам \texttt{enum} наследует \texttt{java.lang.Enum}, поэтому расширить
+какой-то другой класс не может, зато может реализовывать интерфейсы, иметь
+поля, конструктор и даже абстрактные методы~--- тогда каждая константа обязана
+дать свою реализацию (листинг~\ref{lst:02-11}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+enum Direction { NORTH, SOUTH, EAST, WEST }   // простейший вид
+
+enum Operation {
+    ADD("+")      { public double apply(double x, double y) {
+                        return x + y; } },
+    DIVIDE("/")   { public double apply(double x, double y) {
+                        if (y == 0) {
+                            throw new ArithmeticException("на ноль");
+                        }
+                        return x / y; } };
+
+    private final String symbol;
+
+    Operation(String symbol) { this.symbol = symbol; }
+
+    public String getSymbol() { return symbol; }
+
+    public abstract double apply(double x, double y);
+}
+
+for (Operation op : Operation.values()) {      // все константы
+    System.out.println(op.getSymbol() + " -> " + op.apply(12, 4));
+}
+Operation chosen = Operation.valueOf("ADD");   // по имени
+System.out.println(Operation.DIVIDE.ordinal());    // 1
+\end{minted}
+\caption{Перечисление с полем, конструктором и абстрактным методом}
+\label{lst:02-11}
+\end{listing}
+
+Четыре метода компилятор добавляет любому перечислению сам:
+\texttt{values()} возвращает массив всех констант, \texttt{valueOf(name)}
+находит константу по строковому имени, \texttt{name()} даёт имя константы, а
+\texttt{ordinal()}~--- её порядковый номер, считая от нуля. Полагаться на
+\texttt{ordinal()} в бизнес-логике не стоит: стоит кому-то переставить
+константы местами, и номера поменяются молча.
+
+Для перечислений в стандартной библиотеке есть две специализированные
+коллекции. \texttt{EnumSet} хранит множество констант битовым вектором,
+поэтому занимает считанные байты и работает быстрее \texttt{HashSet}; создают
+его методами \texttt{of}, \texttt{allOf}, \texttt{noneOf} и
+\texttt{complementOf}. \texttt{EnumMap} хранит значения в массиве,
+индексируемом по \texttt{ordinal()}, и потому обгоняет \texttt{HashMap};
+конструктору передают класс перечисления: \texttt{new EnumMap<>(Day.class)}.
+Обе коллекции сохраняют порядок объявления констант и не допускают
+\texttt{null}: \texttt{EnumSet}~--- в качестве элемента, \texttt{EnumMap}~---
+в качестве ключа (значение \texttt{null} в нём хранить можно).
+
+\section{Аннотации}
+
+\term{Аннотация}~--- конструкция, добавляющая \term{метаданные} к классу,
+методу, полю или параметру. Сама по себе она ничего не делает: её смысл
+появляется, только когда кто-то её прочитает~--- компилятор, инструмент сборки
+или фреймворк во время выполнения. Объявляют аннотацию словом
+\texttt{@interface}, а её параметры выглядят как методы и могут иметь значения
+по умолчанию.
+
+Поведение аннотации настраивают \term{мета-аннотации}~--- аннотации над
+аннотацией. \texttt{@Target} говорит, к каким элементам кода её разрешено
+применять, \texttt{@Retention}~--- до какого этапа она доживает,
+\texttt{@Inherited}~--- наследуется ли она подклассами,
+\texttt{@Documented}~--- попадает ли в документацию. Самая важная из них~---
+\texttt{@Retention}, и её три уровня приведены в табл.~\ref{tab:02-5}.
+
+\begin{table}[htbp]
+\caption{Уровни сохранения аннотаций}
+\label{tab:02-5}
+\centering
+\begin{tabular}{L{2.6cm}L{5.4cm}L{6.2cm}}
+\toprule
+Уровень & Где существует & Кто читает \\
+\midrule
+\texttt{SOURCE} & только в исходном коде & компилятор, статический анализ \\
+\texttt{CLASS} & в файле \texttt{.class}, но не в памяти & инструменты обработки байт-кода \\
+\texttt{RUNTIME} & доступна во время выполнения & рефлексия, фреймворки \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Практический смысл имеет только последний уровень: аннотацию с
+\texttt{RUNTIME} можно прочитать из работающей программы через
+\term{рефлексию} (\eng{reflection})~--- механизм, позволяющий исследовать
+структуру классов во время выполнения. Как это делается, показано в
+листинге~\ref{lst:02-12}: сначала объявляется аннотация, потом ею помечаются
+метод и поле, и наконец программа сама обходит их и читает разметку.
+
+\begin{listing}[H]
+\begin{minted}{java}
+import java.lang.annotation.*;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.FIELD})
+@interface Info {
+    String author();
+    String date();
+    int version() default 1;
+}
+
+class MyService {
+    @Info(author = "Алиса", date = "2026-03-08")
+    private String queue = "orders";
+
+    @Info(author = "Алиса", date = "2026-03-08", version = 2)
+    public void process() { }
+}
+
+class AnnotationProcessor {
+    public static void main(String[] a) throws Exception {
+        var service = new MyService();
+
+        for (var m : MyService.class.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(Info.class)) {
+                Info info = m.getAnnotation(Info.class);
+                System.out.println(m.getName()
+                        + ": автор " + info.author()
+                        + ", версия " + info.version());
+            }
+        }
+        for (var f : service.getClass().getDeclaredFields()) {
+            if (f.isAnnotationPresent(Info.class)) {
+                f.setAccessible(true);   // доступ к приватному полю
+                System.out.println(f.getName()
+                        + " = " + f.get(service));
+            }
+        }
+    }
+}
+\end{minted}
+\caption{Собственная аннотация и её обработка через рефлексию}
+\label{lst:02-12}
+\end{listing}
+
+Второй цикл делает с полями то же, что первый~--- с методами, и разметку
+проверяет теми же \texttt{isAnnotationPresent} и \texttt{getAnnotation}.
+Отличий два: \texttt{getDeclaredFields()} возвращает поля, а
+\texttt{setAccessible(true)} открывает доступ к приватному полю~--- без этой
+строки \texttt{f.get(объект)} бросит \texttt{IllegalAccessException}.
+
+Именно на этом механизме держатся современные фреймворки. Стандартная
+библиотека даёт \texttt{@Override}, \texttt{@Deprecated} и
+\texttt{@FunctionalInterface}; библиотека тестирования JUnit~---
+\texttt{@Test} и \texttt{@BeforeEach}; Spring~--- \texttt{@Controller},
+\texttt{@Autowired}, \texttt{@GetMapping}; библиотеки проверки данных~---
+\texttt{@NotNull}, \texttt{@Size}, \texttt{@Email}. Схема всюду одна:
+разработчик расставляет метки, а фреймворк при запуске обходит классы,
+находит их и делает по ним работу, которую иначе пришлось бы писать руками.
+Подробно Spring разбирается в главе~\ref{ch:07}, а тестирование~--- в
+главе~\ref{ch:10}.
+
+\section{Лямбды и ссылки на методы}
+
+\subsection{Анонимные и локальные классы}
+
+\term{Анонимный класс}~--- класс без имени, который объявляется и тут же
+создаётся внутри выражения \texttt{new}. Он нужен для одноразовой реализации
+интерфейса, когда заводить отдельный файл ради двух строк кода жалко.
+Наследовать он может ровно один класс или реализовать ровно один интерфейс.
+
+\term{Локальный класс}~--- его именованный родственник: обычный класс,
+объявленный внутри метода и видимый только в нём. Никакого особого синтаксиса
+для него нет~--- строка \texttt{class WordCounter \{ ... \}} просто стоит в теле
+метода, между другими операторами, и объекты создаются тут же обычным
+\texttt{new}. В отличие от анонимного, у него есть имя, поэтому можно создать
+несколько экземпляров и реализовать несколько интерфейсов сразу.
+
+Оба вида видят все члены внешнего класса, включая \texttt{private}, и оба
+подчиняются важному ограничению: из окружающего метода им доступны только
+переменные \texttt{final} или \term{фактически финальные}
+(\eng{effectively final})~--- те, которым после инициализации ни разу не
+присваивали новое значение. Причина в том, что объект может пережить метод, в
+котором создан, а локальные переменные метода к тому моменту уже исчезнут из
+стека: в объект кладут копию значения, и она обязана оставаться согласованной
+с оригиналом. При конфликте имён к полю внешнего класса обращаются через
+\texttt{ВнешнийКласс.this.поле}.
+
+\subsection{Лямбда-выражения}
+
+\term{Лямбда-выражение}~--- анонимная функция, реализующая функциональный
+интерфейс, то есть интерфейс с ровно одним абстрактным методом. Записывается
+она как список параметров, стрелка и тело: \texttt{(a, b) -> a + b}. Типы
+параметров обычно опускают~--- компилятор выводит их из интерфейса, а если тело
+состоит из одного выражения, не нужны ни фигурные скобки, ни \texttt{return}.
+
+Свои функциональные интерфейсы писать приходится редко: пакет
+\texttt{java.util.function} уже содержит готовые почти на любой случай
+(табл.~\ref{tab:02-6}). Запомнить их проще по паре «что принимает~--- что
+возвращает».
+
+\begin{table}[htbp]
+\caption{Основные функциональные интерфейсы}
+\label{tab:02-6}
+\centering
+\begin{tabular}{L{4.6cm}L{2.5cm}L{2.7cm}L{4.2cm}}
+\toprule
+Интерфейс & Принимает & Возвращает & Назначение \\
+\midrule
+\texttt{Runnable} & --- & \texttt{void} & действие без аргументов \\
+\texttt{Supplier<T>} & --- & \texttt{T} & поставщик значения \\
+\texttt{Consumer<T>} & \texttt{T} & \texttt{void} & потребитель значения \\
+\texttt{Predicate<T>} & \texttt{T} & \texttt{boolean} & проверка условия \\
+\texttt{Function<T,R>} & \texttt{T} & \texttt{R} & преобразование значения \\
+\texttt{UnaryOperator<T>} & \texttt{T} & \texttt{T} & операция над значением \\
+\texttt{BinaryOperator<T>} & \texttt{T}, \texttt{T} & \texttt{T} & свёртка двух значений \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+У интерфейса \texttt{Function} есть два метода композиции, соединяющие функции
+в цепочку. Вызов \texttt{f.andThen(g)} применяет сначала \texttt{f}, а её
+результат передаёт \texttt{g}; \texttt{f.compose(g)}~--- наоборот, сначала
+\texttt{g}. Порядок~--- единственное их различие, поэтому
+\texttt{trim.andThen(lower)} и \texttt{lower.compose(trim)} дают одну и ту же
+функцию.
+
+\subsection{Ссылки на методы}
+
+Если лямбда не делает ничего, кроме вызова уже существующего метода, её
+записывают короче~--- \term{ссылкой на метод} через двойное двоеточие. Видов
+ссылок четыре: на статический метод (\texttt{Math::max} вместо
+\texttt{(a, b) -> Math.max(a, b)}); на метод конкретного объекта
+(\texttt{System.out::println} вместо \texttt{s -> System.out.println(s)}); на
+метод произвольного объекта данного типа (\texttt{String::toUpperCase} вместо
+\texttt{s -> s.toUpperCase()}); на конструктор (\texttt{ArrayList::new} вместо
+\texttt{() -> new ArrayList<>()}).
+
+Как один и тот же код выглядит во всех трёх формах, показано в
+листинге~\ref{lst:02-13}. Сравните три блока: смысл не меняется, а объём
+сокращается втрое. \texttt{Comparator} здесь~--- объект, умеющий сравнить два
+значения: его \texttt{compare} возвращает отрицательное число, ноль или
+положительное, и по знаку результата \texttt{sort} расставляет элементы.
+
+\begin{listing}[H]
+\begin{minted}{java}
+List<String> cities = new ArrayList<>(
+        List.of("Москва", "Берлин", "Токио", "Париж"));
+
+// 1. Анонимный класс: пять строк на одну мысль
+cities.sort(new Comparator<String>() {
+    @Override public int compare(String a, String b) {
+        return Integer.compare(a.length(), b.length());
+    }
+});
+
+// 2. Лямбды: то же самое в одну строку
+cities.sort((a, b) -> Integer.compare(a.length(), b.length()));
+cities.forEach(c -> System.out.println(c));
+
+// 3. Ссылка на метод: короче уже некуда
+cities.sort(Comparator.comparingInt(String::length));
+cities.forEach(System.out::println);
+
+// лямбда с логикой на ссылку не заменяется
+cities.forEach(c -> System.out.println("Город: " + c));
+
+int factor = 2;                    // фактически финальная
+Function<Integer, Integer> mul = x -> x * factor;
+System.out.println(mul.apply(5));  // 10
+\end{minted}
+\caption{От анонимного класса к лямбде и ссылке на метод}
+\label{lst:02-13}
+\end{listing}
+
+Обратите внимание на предпоследнюю строку кода: как только внутри лямбды
+появляется хоть что-то, кроме голого вызова метода, ссылка становится
+невозможна. И ещё тонкость: слово \texttt{this} внутри лямбды указывает на
+объект внешнего класса, а внутри анонимного класса~--- на экземпляр самого
+анонимного класса.
+
+\section{Пакеты и модули}
+
+\term{Пакет} (\texttt{package})~--- механизм организации классов в логические
+группы. Он решает три задачи: даёт коду понятную структуру, предотвращает
+конфликты имён (два класса \texttt{Order} могут спокойно жить в разных пакетах)
+и участвует в управлении доступом~--- вспомните уровень видимости «без
+модификатора». Имя пакета пишется строчными буквами и повторяет структуру
+каталогов, а объявление \texttt{package} обязано стоять первой строкой файла.
+Классы из чужих пакетов подключают словом \texttt{import}.
+
+Отдельная форма~--- \term{статический импорт}. Обычный \texttt{import}
+подтягивает класс, и обращаться к его членам всё равно приходится по имени
+класса: \texttt{Math.max(a, b)}. Статический импорт подтягивает сами
+статические члены, и дальше их пишут без префикса: после
+\texttt{import static java.lang.Math.*;} строка превращается в
+\texttt{max(a, b) + sqrt(2) * PI}. Код становится короче, но за это заплачено
+читаемостью~--- глядя на \texttt{max(a, b)}, уже не понять, откуда взялся этот
+метод. Поэтому его берегут для модульных тестов, где так подключают целый
+набор проверок.
+
+\term{Модульная система} (\eng{Java Platform Module System, JPMS}) появилась в
+Java~9 и работает уровнем выше пакетов. До неё все библиотеки сваливались в
+один общий \texttt{classpath}: одноимённые классы конфликтовали, любой
+\texttt{public}-класс был доступен кому угодно, а собрать урезанную среду
+выполнения было невозможно.
+
+\term{Модуль}~--- это набор пакетов и ресурсов, снабжённый файлом-дескриптором
+\texttt{module-info.java} в корне исходников (листинг~\ref{lst:02-14}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+module university.lecture {
+    requires java.base;              // зависимость от модуля
+    requires transitive java.sql;    // передаётся дальше
+
+    exports university.lecture.model;    // видно всем
+    exports university.lecture.internal  // видно только одному
+            to university.report;
+
+    opens university.lecture.model;  // открыт для рефлексии
+}
+\end{minted}
+\caption{Дескриптор модуля module-info.java}
+\label{lst:02-14}
+\end{listing}
+
+Директив немного. \texttt{requires} объявляет зависимость от другого модуля, а
+\texttt{requires transitive}~--- зависимость, которая передаётся всем, кто
+зависит уже от вас. \texttt{exports} открывает пакет наружу на этапе
+компиляции, а форма \texttt{exports ... to} ограничивает круг адресатов.
+\texttt{opens} открывает пакет для рефлексии во время выполнения~--- это нужно
+фреймворкам, которые лезут внутрь ваших классов.
+
+\section{Даты и время: пакет java.time}
+
+Даты появляются почти в любой программе: дата рождения студента, срок сдачи
+работы, время начала пары, отметка о том, когда запись попала в базу. С
+Java~8 для этого существует пакет \texttt{java.time}, и он единственный
+правильный способ работать со временем.
+
+Прежние классы \texttt{java.util.Date}, \texttt{Calendar} и
+\texttt{SimpleDateFormat} формально ещё в составе платформы, но брать их в
+новый код не нужно. Они изменяемы: передали дату в чужой метод~--- и она
+вернулась другой. \texttt{SimpleDateFormat} хранит состояние разбора внутри
+себя, поэтому один общий экземпляр при параллельных вызовах выдаёт
+перепутанные даты. Месяцы в \texttt{Calendar} нумеруются с нуля: январь~---
+это 0, а декабрь~--- 11. И, наконец, \texttt{Date}~--- вовсе не дата, а момент
+времени, который печатается в часовом поясе машины, из-за чего одно значение
+выглядит по-разному на разных серверах.
+
+Представьте старый набор классов как кухонные весы, у которых чашка приварена
+к столу: любой прохожий может положить туда свою гирьку, и вы об этом не
+узнаете. \texttt{java.time}~--- это весы, которые печатают чек: чек нельзя
+подправить, можно только выбить новый.
+
+\subsection{Карта пакета}
+
+Ключевая идея нового пакета: для каждой задачи~--- свой тип. Универсальной даты
+не бывает; бывает дата без времени, время без даты, момент на шкале и так далее
+(табл.~\ref{tab:02-7}).
+
+\begin{table}[htbp]
+\caption{Основные классы пакета \texttt{java.time}}
+\label{tab:02-7}
+\centering
+\begin{tabular}{L{3.4cm}L{5.6cm}L{5.4cm}}
+\toprule
+Класс & Что хранит & Когда применять \\
+\midrule
+\texttt{LocalDate} & дату без времени и пояса & дата рождения, срок сдачи \\
+\texttt{LocalTime} & время суток без даты & начало пары, часы работы \\
+\texttt{LocalDateTime} & дату и время без пояса & запись в ежедневнике \\
+\texttt{ZonedDateTime} & дату, время и часовой пояс & встреча в разных странах \\
+\texttt{Instant} & момент на шкале от 1970 года & отметка о событии, логи \\
+\texttt{Duration} & промежуток в часах и минутах & длительность, таймаут \\
+\texttt{Period} & промежуток в годах и днях & возраст, стаж \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Аналогия поможет не путать первые пять. \texttt{LocalDate}~--- отрывной
+календарь: показывает число, но не знает про время. \texttt{LocalTime}~---
+наручные часы без даты. \texttt{LocalDateTime}~--- страница ежедневника:
+«8~марта, 10:30» понятно, но непонятно, в каком городе.
+\texttt{ZonedDateTime}~--- табло вылетов, где рядом с временем всегда указан
+город. А \texttt{Instant}~--- счётчик, который щёлкает секунды с 1970~года и
+не интересуется, где вы находитесь: его значение одинаково для Москвы, Токио
+и Лондона.
+
+\subsection{Создание, арифметика и неизменяемость}
+
+Обычных конструкторов у этих классов нет~--- только статические фабричные
+методы, одни и те же у всех: \texttt{now()} берёт текущий момент по системным
+часам, \texttt{of()} собирает объект из частей, \texttt{parse()} разбирает
+строку формата ISO~8601. Все объекты пакета неизменяемы, поэтому методы
+\texttt{plus...}, \texttt{minus...} и \texttt{with...} не двигают вашу дату,
+а возвращают новую (листинг~\ref{lst:02-15}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+LocalDate today = LocalDate.now();
+LocalTime start = LocalTime.of(10, 30);
+LocalDate exam = LocalDate.of(2026, 6, 15);    // месяцы с 1!
+LocalDate day = LocalDate.of(2026, Month.MARCH, 8);
+LocalDate parsed = LocalDate.parse("2026-09-01");
+
+day.getMonth();       // MARCH - это enum, а не число
+day.getDayOfWeek();   // SUNDAY
+day.lengthOfMonth();  // 31
+
+LocalDate later = day.plusDays(10);      // 2026-03-18
+LocalDate before = day.minusMonths(1);   // 2026-02-08
+
+day.plusYears(100);                      // результат выброшен!
+System.out.println(day);                 // осталось 2026-03-08
+
+LocalDate last = day.withDayOfMonth(day.lengthOfMonth());
+System.out.println(LocalDate.of(2026, 1, 31).plusMonths(1));
+
+day.isBefore(exam);      // true
+\end{minted}
+\caption{Создание дат и арифметика над ними}
+\label{lst:02-15}
+\end{listing}
+
+Строка \texttt{day.plusYears(100)} без присваивания~--- ровно та же ловушка,
+что и \texttt{s.toUpperCase()} у строк: объект создан и тут же выброшен.
+Приятная деталь~--- корректность дат платформа стережёт сама: прибавление
+месяца к 31~января даёт 28~февраля, а не несуществующее 31~февраля. Если строка
+не подходит под ожидаемый формат, \texttt{parse()} бросает
+\texttt{DateTimeParseException}~--- непроверяемое исключение.
+
+\subsection{Промежутки: Period, Duration и ChronoUnit}
+
+Разницу между двумя моментами измеряют тремя разными инструментами, и путать
+их~--- классическая ошибка. \texttt{Period}~--- «человеческое» время: годы,
+месяцы, дни; работает с \texttt{LocalDate}. \texttt{Duration}~--- «машинное»:
+часы, минуты, секунды; работает с \texttt{LocalTime},
+\texttt{LocalDateTime} и \texttt{Instant}. \texttt{ChronoUnit}~---
+перечисление единиц, которое считает разницу одним числом
+(листинг~\ref{lst:02-16}).
+
+В листинге впервые появляется форматированный вывод. Метод
+\texttt{System.out.printf} печатает по шаблону, подставляя значения по порядку:
+\texttt{\%d}~--- целое число, \texttt{\%s}~--- строка, \texttt{\%.2f}~---
+дробное с двумя знаками после запятой, \texttt{\%4d}~--- целое, выровненное по
+четырём позициям, \texttt{\%n}~--- перевод строки. Такой же шаблон принимает
+\texttt{String.format}, но он не печатает, а возвращает строку~--- это и нужно
+в \texttt{toString()}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+LocalDate birthday = LocalDate.of(2005, 9, 1);
+LocalDate today = LocalDate.of(2026, 3, 8);
+
+// Period: раскладка по календарным единицам
+Period age = Period.between(birthday, today);
+System.out.printf("%d лет %d мес. %d дн.%n",
+        age.getYears(), age.getMonths(), age.getDays());
+
+// ChronoUnit: одно число в выбранных единицах
+ChronoUnit.DAYS.between(birthday, today);    // 7493
+ChronoUnit.YEARS.between(birthday, today);   // 20
+
+// Duration: длительность в часах и минутах
+Duration pair = Duration.between(LocalTime.of(10, 30),
+                                LocalTime.of(12, 5));
+pair.toMinutes();      // 95
+pair.toHoursPart();    // 1
+pair.toMinutesPart();  // 35
+
+today.plus(Period.ofMonths(5));      // 2026-08-08
+
+// готовые корректировщики дат
+today.with(TemporalAdjusters.lastDayOfMonth());          // 31.03
+today.with(TemporalAdjusters.next(DayOfWeek.FRIDAY));    // 13.03
+\end{minted}
+\caption{Три способа измерить промежуток времени}
+\label{lst:02-16}
+\end{listing}
+
+Правило выбора простое: если результат показывают человеку («20~лет 6~месяцев
+7~дней»)~--- берите \texttt{Period}; если результат идёт в вычисления
+(«сколько всего дней прошло»)~--- \texttt{ChronoUnit}. Схлопнуть
+\texttt{Period} в дни арифметикой нельзя: в месяцах разное число дней, и без
+обеих исходных дат перевод невозможен. Последние две строки листинга~---
+класс \texttt{TemporalAdjusters}, набор готовых корректировщиков для задач
+вроде «последний день месяца» или «ближайшая пятница». Сам же
+\texttt{TemporalAdjuster}~--- функциональный интерфейс с единственным методом
+\texttt{adjustInto}, поэтому свой корректировщик пишут лямбдой и передают в
+тот же \texttt{with}.
+
+\subsection{Форматирование и часовые пояса}
+
+Метод \texttt{toString()} у классов пакета всегда выдаёт формат ISO~8601 вида
+\texttt{2026-03-08}. Для человека нужен другой вид, за него отвечает
+\texttt{DateTimeFormatter}: в отличие от \texttt{SimpleDateFormat} он
+неизменяем и потокобезопасен, поэтому один экземпляр спокойно держат в поле
+\texttt{static final}. Часовые пояса~--- вторая половина темы.
+\texttt{LocalDateTime} про них ничего не знает: запись «8~марта, 14:30»
+одинаково верна для Москвы и Токио, но это разные моменты времени. Чтобы
+получить конкретный момент, нужен пояс \texttt{ZoneId}
+(листинг~\ref{lst:02-17}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+private static final DateTimeFormatter RU =
+        DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
+LocalDateTime moment = LocalDateTime.of(2026, 3, 8, 14, 0);
+Locale ru = Locale.forLanguageTag("ru");
+
+System.out.println(moment.format(RU));     // 08.03.2026 14:00
+LocalDateTime back = LocalDateTime.parse("08.03.2026 14:00", RU);
+System.out.println(moment.format(
+        DateTimeFormatter.ofPattern("d MMMM yyyy", ru)));
+
+ZoneId moscow = ZoneId.of("Europe/Moscow");
+
+ZonedDateTime inMoscow = ZonedDateTime.of(moment, moscow);
+ZonedDateTime inTokyo =
+        inMoscow.withZoneSameInstant(ZoneId.of("Asia/Tokyo"));
+System.out.println(inTokyo);   // 2026-03-08T20:00+09:00[Asia/Tokyo]
+System.out.println(inMoscow.isEqual(inTokyo));   // true: один момент
+
+Instant instant = inMoscow.toInstant();   // 2026-03-08T11:00:00Z
+\end{minted}
+\caption{Форматирование дат и работа с часовыми поясами}
+\label{lst:02-17}
+\end{listing}
+
+Буквы шаблона стоит запомнить: \texttt{y}~--- год, \texttt{M}~--- месяц
+(\texttt{MM} даёт 03, \texttt{MMMM}~--- «марта»), \texttt{d}~--- день месяца,
+\texttt{E}~--- день недели, \texttt{H}~--- час от 0 до 23, \texttt{m}~---
+минуты, \texttt{s}~--- секунды.
+
+\begin{oshibka}
+\textbf{Две ловушки шаблонов.} Первая: \texttt{MM}~--- это месяцы, а
+\texttt{mm}~--- минуты; перепутать легко, а ошибка проявится только в логах.
+Вторая: \texttt{YYYY} заглавными~--- это не обычный год, а «год недели» по
+стандарту ISO, и в последних числах декабря он отличается от \texttt{yyyy} на
+единицу. Для обычной даты всегда пишите \texttt{yyyy}.
+\end{oshibka}
+
+Пояс и смещение~--- разные вещи: \texttt{+03:00}~--- просто число, а
+\texttt{Europe/Moscow}~--- целое правило со всей историей переводов стрелок.
+Для встречи, которая состоится через полгода, нужен именно \texttt{ZoneId}:
+если страна переведёт стрелки, \texttt{ZonedDateTime} посчитает верно, а
+зафиксированное смещение~--- нет.
+
+Отсюда же ответ на вопрос, почему в базу данных кладут \texttt{Instant}.
+Пользователи сидят в разных поясах, сервер может переехать в другой
+дата-центр, а правила перехода на летнее время страны меняют законом. Если
+сохранить «14:30» без пояса, восстановить момент уже не удастся.
+\texttt{Instant}~--- это фотография показаний секундомера, одна для всех
+наблюдателей, а \texttt{ZonedDateTime}~--- подпись под ней на нужном языке.
+Хранить надо фотографию, а подписи делать по месту, при показе пользователю.
+
+\praktikum{}
+
+Задания рассчитаны на JDK~17 и новее (\texttt{switch} по запечатанным типам
+требует JDK~21). Во всех заданиях с датами считайте от фиксированных дат, а не
+от \texttt{LocalDate.now()},~--- иначе вывод будет меняться каждый день и
+проверить работу станет невозможно.
+
+\subsection*{Задание 1. Класс, статика и модификаторы доступа}
+
+Напишите класс \texttt{BankAccount} с приватными полями \texttt{owner},
+\texttt{balance}, \texttt{accountNumber} и приватными статическими полями
+\texttt{totalAccounts} (счётчик счетов) и \texttt{bankName}. Статический блок
+задаёт название банка и печатает сообщение о запуске системы; блок
+инициализации экземпляра увеличивает счётчик и печатает номер создаваемого
+счёта. Конструктор принимает владельца и начальный баланс, а номер счёта
+собирает в формате \texttt{ACC-1}, \texttt{ACC-2} и так далее. Метод
+\texttt{deposit} отвергает неположительные суммы, \texttt{withdraw}~---
+попытку снять больше, чем есть; статический \texttt{getTotalAccounts}
+возвращает счётчик; \texttt{toString()} даёт строку вида
+\texttt{[ACC-1] Алиса: 1500.00 руб.} Создайте в \texttt{main} два счёта,
+выполните пополнение, снятие, неудачное снятие и неудачное пополнение.
+Проследите по выводу порядок срабатывания статического блока, блока
+экземпляра и конструктора и объясните его письменно.
+
+Вторая часть~--- модификаторы доступа. Заведите два пакета: \texttt{core} и
+\texttt{app}. В первом объявите класс \texttt{Employee} с полями
+\texttt{public String name}, \texttt{protected int age},
+\texttt{double salary} без модификатора и \texttt{private String password} и с
+методами \texttt{getRole()} (\texttt{public}), \texttt{promote()}
+(\texttt{protected}), \texttt{printSummary()} без модификатора и
+\texttt{validatePassword()} (\texttt{private}). Во втором пакете напишите
+класс, который обращается ко всем восьми членам, и для каждой строки
+определите заранее, скомпилируется она и почему. Затем перепишите
+\texttt{Employee} с правильной инкапсуляцией: все поля приватные, геттеры для
+всех, кроме пароля, и публичный \texttt{authenticate}, вызывающий приватную
+проверку внутри.
+
+\subsection*{Задание 2. Абстрактные классы, интерфейсы и запечатанные типы}
+
+Реализуйте систему расчёта бонусов. Абстрактный класс \texttt{Employee}
+хранит имя и оклад, объявляет абстрактный метод \texttt{calculateBonus()} и
+обычный \texttt{totalCompensation()}~--- сумму оклада и бонуса. Наследники:
+\texttt{Manager} с полем \texttt{teamSize} и бонусом
+\texttt{baseSalary * 0.15 + teamSize * 5000}; \texttt{Developer} с полем
+\texttt{language} и бонусом \texttt{baseSalary * 0.12}; \texttt{Intern} с
+фиксированным бонусом 10~000. В \texttt{main} создайте массив
+\texttt{Employee[]} из четырёх сотрудников, пройдите его циклом
+\texttt{for-each} и посчитайте общий бюджет. Объясните письменно, почему
+переменная типа \texttt{Employee} вызывает разные реализации бонуса.
+
+Вторая часть~--- система оплаты на запечатанном интерфейсе. Объявите
+интерфейс \texttt{PaymentMethod}, разрешающий трёх наследников, с методами
+\texttt{process(double)} и \texttt{fee(double)}. Наследники~--- записи:
+\texttt{CreditCard} с номером и держателем (комиссия 2~\%, в описании видны
+только последние четыре цифры номера), \texttt{BankTransfer} с названием
+банка и счётом (комиссия 50~руб.), \texttt{CryptoWallet} с адресом и валютой
+(комиссия 1,5~\%). Напишите статический метод \texttt{describe}, в котором
+\texttt{switch} разбирает все три варианта и не имеет ветки
+\texttt{default}. Проверьте, что произойдёт, если добавить четвёртого
+наследника, забыв про \texttt{switch}.
+
+Третья часть~--- интерфейс с методами всех видов. Напишите \texttt{Loggable} с
+абстрактным методом \texttt{getComponentName()}, \texttt{default}-методами
+\texttt{log} и \texttt{logError}, \texttt{private}-методом
+\texttt{formatTimestamp}, дающим время в формате \texttt{HH:mm:ss}, и
+\texttt{static}-методом \texttt{getLogLevel}. Реализуйте его двумя классами и
+убедитесь, что приватный метод интерфейса снаружи недоступен.
+
+\subsection*{Задание 3. Массивы и строки}
+
+Напишите класс \texttt{MatrixOperations} со статическими методами:
+\texttt{print} печатает матрицу, выравнивая числа по четыре символа;
+\texttt{transpose} возвращает транспонированную матрицу; \texttt{multiply}
+перемножает две матрицы, а при несовместимых размерах печатает ошибку и
+возвращает \texttt{null}; \texttt{diagonalSum} считает сумму главной
+диагонали. Проверьте работу на матрицах размером 2 на 3 и 3 на 2.
+
+Затем напишите программу \texttt{GradeJournal}, хранящую оценки четырёх
+студентов в зубчатом массиве, где у каждого разное число оценок. Реализуйте
+методы среднего, максимума и минимума, выведите таблицу по каждому студенту и
+найдите лучшего по среднему баллу. Объясните, почему во внутреннем цикле
+используется \texttt{grades[i].length}, а не общая длина.
+
+Третья часть~--- строки. Класс \texttt{TextAnalyzer} принимает текст в
+конструкторе и умеет считать слова, находить самое длинное слово,
+разворачивать порядок слов (не букв), считать вхождения подстроки без учёта
+регистра и проверять текст на палиндром, игнорируя регистр, пробелы и знаки
+препинания. Испытайте программу на строке «А роза упала на лапу Азора».
+
+Четвёртая часть~--- пул строк. Создайте семь строк: два литерала, два объекта
+через \texttt{new}, результат \texttt{intern()}, конкатенацию двух литералов и
+конкатенацию с участием переменной. Перед каждым сравнением через \texttt{==}
+и \texttt{equals} запишите свой прогноз, затем запустите программу и объясните
+все расхождения.
+
+\subsection*{Задание 4. Записи, перечисления и аннотации}
+
+Напишите систему оценок. Перечисление \texttt{Grade} с константами
+\texttt{A}, \texttt{B}, \texttt{C}, \texttt{D}, \texttt{F} хранит описание и
+числовой вес (4,0; 3,0; 2,0; 1,0; 0,0), имеет метод \texttt{isPassing()} и
+статический \texttt{fromScore(int)}, переводящий балл от 0 до 100 в оценку по
+порогам 90, 80, 70 и 60. Запись \texttt{Student(String name, int id)}
+снабжается компактным конструктором, который отвергает пустое имя и
+неположительный номер. В \texttt{main} создайте шесть студентов, сгруппируйте
+их по оценкам через \texttt{EnumMap}, получите множество проходных оценок
+через \texttt{EnumSet}, выведите сводку и посчитайте средний балл.
+
+Вторая часть~--- собственный мини-фреймворк проверки данных. Объявите две
+аннотации уровня \texttt{RUNTIME}: \texttt{@NotEmpty} с параметром
+\texttt{message} и значением по умолчанию и \texttt{@Range} с параметрами
+\texttt{min}, \texttt{max} и \texttt{message}. Разметьте ими поля класса
+\texttt{RegistrationForm} (имя, почта, возраст). Напишите класс
+\texttt{Validator} со статическим методом \texttt{validate}, который через
+рефлексию обходит поля объекта, проверяет разметку и возвращает список
+сообщений об ошибках; пустой список означает успешную проверку. Испытайте его
+на корректной и на заведомо некорректной форме.
+
+\subsection*{Задание 5. Лямбды, ссылки на методы и даты}
+
+Напишите программу, в которой шесть функциональных интерфейсов реализованы
+анонимными классами~--- компаратор по длине строки, потребитель для печати,
+две функции преобразования, предикат и поставщик списка. Выполните три этапа
+рефакторинга: замените каждый анонимный класс лямбда-выражением; там, где это
+возможно, замените лямбду ссылкой на метод; выпишите, какие лямбды заменить
+не удалось и почему. Дополнительно объявите прямо в \texttt{main} локальный
+класс \texttt{WordCounter}, считающий число слов в строке, создайте два его
+экземпляра и убедитесь, что за пределами метода это имя недоступно.
+
+Вторая часть~--- композиция функций. Создайте четыре объекта типа
+\texttt{Function<String, String>}: удаление пробелов по краям, перевод в нижний
+регистр, схлопывание нескольких пробелов в один и перевод первой буквы в
+верхний регистр. Соедините их методом \texttt{andThen} в одну функцию и
+примените к нескольким небрежно набранным строкам. Повторите ту же цепочку
+через \texttt{compose} и объясните, чем результат отличается и почему.
+
+Третья часть~--- расписание. Объявите запись \texttt{Lesson} с названием,
+днём недели, временем начала и длительностью и напишите методы: время
+окончания занятия; ближайшая дата занятия строго после заданной (через
+\texttt{TemporalAdjusters.next}); суммарная длительность занятий за неделю
+(начните с \texttt{Duration.ZERO}); собственный корректировщик
+\texttt{nextBusinessDay}, сдвигающий дату вперёд, пока она не попадёт на
+день, который не суббота, не воскресенье и не входит в множество праздников.
+Отсчёт ведите от 8~марта 2026~года, праздником считайте 9~марта. Названия дней
+недели выводите по-русски: метод \texttt{getDisplayName} принимает два
+аргумента~--- \texttt{TextStyle.FULL\_STANDALONE} из пакета
+\texttt{java.time.format} и \texttt{Locale.forLanguageTag("ru")}. Даты
+печатайте по шаблону \texttt{dd.MM.yyyy}. Сверьтесь по трём значениям:
+8~марта 2026~года~--- воскресенье, ближайшая пятница после него~---
+13.03.2026, а первый рабочий день~--- 10~марта, потому что 9~марта объявлено
+праздником.
+
+Четвёртая часть~--- разбор строк и часовые пояса. Напишите класс, который
+хранит один \texttt{DateTimeFormatter} в поле \texttt{static final}, разбирает
+строку в \texttt{LocalDateTime}, привязывает её к московскому поясу и печатает
+тот же момент в поясах \texttt{Asia/Tokyo} и \texttt{America/New\_York}, а
+также его \texttt{Instant}. Обработайте массив из трёх строк, последняя из
+которых записана в формате ISO и под шаблон не подходит: перехватите
+\texttt{DateTimeParseException} и выведите понятное сообщение, не уронив
+программу. Затем добавьте строку с датой 31~февраля и объясните результат.
+
+\subsection*{Результаты занятия}
+
+По итогам занятия у вас должны быть готовы: файлы \texttt{.java} со всеми
+пятью заданиями и результатами их запуска; таблица разбора модификаторов
+доступа из задания~1; прогнозы и объяснения к исследованию пула строк из
+задания~3; список лямбд, не заменяемых ссылками на методы, из задания~5;
+письменные ответы на вопросы о датах.
+
+\kontrolvoprosy
+
+\begin{enumerate}
+\item В каком порядке выполняются статический блок, блок инициализации
+      экземпляра и конструктор? Сколько раз срабатывает каждый из них?
+\item Чем отличается поле экземпляра от статического поля и когда нужен
+      каждый из них?
+\item Что означает отсутствие модификатора доступа и почему это не то же
+      самое, что \texttt{public}?
+\item Чем \texttt{sealed}-класс отличается от \texttt{final}-класса и какие
+      три варианта есть у его наследника?
+\item Когда следует выбирать абстрактный класс, а когда интерфейс? Приведите
+      по одному примеру на каждый случай.
+\item Почему класс не скомпилируется, если он реализует два интерфейса с
+      одинаковым \texttt{default}-методом, и как это исправить?
+\item Что напечатает \texttt{System.out.println(arr)} для массива и почему?
+      Как увидеть содержимое?
+\item Что такое пул строк? Почему два литерала дают \texttt{true} при
+      сравнении через \texttt{==}, а два объекта, созданных через
+      \texttt{new},~--- \texttt{false}?
+\item Что компилятор генерирует для записи автоматически? Может ли запись
+      наследоваться от класса?
+\item Какие переменные окружающего метода доступны лямбде и анонимному
+      классу? Почему введено это ограничение?
+\item Приведите пример лямбды, которую нельзя заменить ссылкой на метод, и
+      объясните причину.
+\item Чем различаются \texttt{Period}, \texttt{Duration} и
+      \texttt{ChronoUnit}? Какой инструмент нужен, чтобы показать
+      пользователю возраст, а какой~--- чтобы посчитать число прошедших дней?
+\item Почему момент события в базе данных хранят как \texttt{Instant}, а не
+      как \texttt{LocalDateTime}?
+\end{enumerate}
+
+\testzadaniya
+
+\begin{enumerate}
+
+\item Что означает отсутствие модификатора доступа у поля?
+  \begin{enumerate}
+    \item[а)] доступ только внутри своего пакета
+    \item[б)] доступ отовсюду, как у \texttt{public}
+    \item[в)] доступ только внутри класса, как у \texttt{private}
+    \item[г)] доступ только для подклассов
+  \end{enumerate}
+
+\item Каким обязан быть наследник \texttt{sealed}-класса?
+  \begin{enumerate}
+    \item[а)] только \texttt{final}
+    \item[б)] только \texttt{abstract}
+    \item[в)] \texttt{final}, \texttt{sealed} или \texttt{non-sealed}
+    \item[г)] любым: ограничений нет
+  \end{enumerate}
+
+\item Какие поля может содержать интерфейс?
+  \begin{enumerate}
+    \item[а)] любые, как обычный класс
+    \item[б)] только \texttt{private static final}
+    \item[в)] только константы \texttt{public static final}
+    \item[г)] интерфейсы не могут содержать полей
+  \end{enumerate}
+
+\item Что произойдёт при вызове \texttt{names[0].length()}, если объявлено
+      \texttt{String[] names = new String[3]}?
+  \begin{enumerate}
+    \item[а)] вернётся 0
+    \item[б)] вернётся 3
+    \item[в)] ошибка компиляции
+    \item[г)] будет выброшено \texttt{NullPointerException}
+  \end{enumerate}
+
+\item Строка \texttt{s} равна \texttt{"hello"}. У неё вызвали метод
+      \texttt{toUpperCase()} и не сохранили результат. Что теперь напечатает
+      вывод \texttt{s}?
+  \begin{enumerate}
+    \item[а)] \texttt{HELLO}
+    \item[б)] \texttt{hello}
+    \item[в)] \texttt{Hello}
+    \item[г)] ошибка компиляции
+  \end{enumerate}
+
+\item Что такое пул строк?
+  \begin{enumerate}
+    \item[а)] массив всех строк программы
+    \item[б)] стек для хранения строковых переменных
+    \item[в)] область в куче для хранения уникальных строковых литералов
+    \item[г)] пул потоков для обработки строк
+  \end{enumerate}
+
+\item Почему конкатенация строк в цикле через \texttt{+=} неэффективна?
+  \begin{enumerate}
+    \item[а)] потому что каждая операция создаёт новый объект
+    \item[б)] потому что оператор \texttt{+=} не работает со строками
+    \item[в)] потому что строки хранятся в стеке
+    \item[г)] потому что компилятор не может оптимизировать цикл
+  \end{enumerate}
+
+\item Что компилятор генерирует для \texttt{record} автоматически?
+  \begin{enumerate}
+    \item[а)] только конструктор
+    \item[б)] конструктор и \texttt{toString()}
+    \item[в)] конструктор, геттеры и \texttt{toString()}
+    \item[г)] конструктор, геттеры, \texttt{equals()}, \texttt{hashCode()} и
+              \texttt{toString()}
+  \end{enumerate}
+
+\item Как \texttt{EnumMap} хранит данные внутри?
+  \begin{enumerate}
+    \item[а)] как хеш-таблицу
+    \item[б)] как связный список
+    \item[в)] как массив, индексируемый по \texttt{ordinal()}
+    \item[г)] как двоичное дерево поиска
+  \end{enumerate}
+
+\item Что означает \texttt{@Retention(RetentionPolicy.RUNTIME)}?
+  \begin{enumerate}
+    \item[а)] аннотация существует только в исходном коде
+    \item[б)] аннотация доступна во время выполнения через рефлексию
+    \item[в)] аннотация хранится только в файле \texttt{.class}
+    \item[г)] аннотация наследуется подклассами
+  \end{enumerate}
+
+\item К каким переменным окружающего метода имеет доступ лямбда-выражение?
+  \begin{enumerate}
+    \item[а)] к любым переменным
+    \item[б)] только к статическим
+    \item[в)] только к \texttt{final} или фактически финальным
+    \item[г)] ни к каким
+  \end{enumerate}
+
+\item Переменной \texttt{d} присвоена дата 8~марта 2026~года, затем вызван
+      \texttt{d.plusYears(1)} без присваивания результата. Что напечатает
+      вывод \texttt{d}?
+  \begin{enumerate}
+    \item[а)] \texttt{2027-03-08}
+    \item[б)] \texttt{2026-03-08}: объекты \texttt{java.time} неизменяемы
+    \item[в)] ошибка компиляции
+    \item[г)] \texttt{null}
+  \end{enumerate}
+
+\item Почему момент времени в базе данных обычно хранят как \texttt{Instant},
+      а не как \texttt{LocalDateTime}?
+  \begin{enumerate}
+    \item[а)] \texttt{Instant} занимает меньше памяти
+    \item[б)] \texttt{LocalDateTime} нельзя записать в базу данных
+    \item[в)] \texttt{LocalDateTime} не хранит пояса, поэтому момент
+              невосстановим, а \texttt{Instant} одинаков для всех
+    \item[г)] \texttt{LocalDateTime} сам определяет пояс сервера
+  \end{enumerate}
+
+\end{enumerate}

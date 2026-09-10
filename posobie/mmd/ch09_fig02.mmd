@@ -1,0 +1,11 @@
+flowchart TD
+    MAIN["main()"] --> LAUNCH["launch(args)"]
+    LAUNCH --> S1["1. Запускает среду выполнения JavaFX (графику, поток отрисовки)"]
+    S1 --> S2["2. Создаёт экземпляр Application через рефлексию<br/>(нужен public-конструктор без аргументов)"]
+    S2 --> S3["3. Вызывает init() ← JavaFX-Launcher Thread"]
+    S3 --> S4["4. Создаёт primary Stage"]
+    S4 --> S5["5. Вызывает start(stage) ← JavaFX Application Thread"]
+    S5 --> LIVE["приложение живёт и обрабатывает события"]
+    LIVE --> S6["6. Закрыто последнее окно ИЛИ вызван Platform.exit()"]
+    S6 --> S7["7. Вызывает stop() ← JavaFX Application Thread"]
+    S7 --> S8["8. Завершает среду выполнения; управление возвращается в main()"]

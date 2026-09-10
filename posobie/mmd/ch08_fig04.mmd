@@ -1,0 +1,7 @@
+flowchart TD
+    ROOT["myapp.war"] --> WEBINF["WEB-INF/"]
+    WEBINF --> XML["web.xml — дескриптор развёртывания"]
+    WEBINF --> CLASSES["classes/ — скомпилированные .class"]
+    WEBINF --> LIB["lib/ — jar-зависимости"]
+    ROOT --> INDEX["index.html"]
+    ROOT --> CSS["css/style.css"]

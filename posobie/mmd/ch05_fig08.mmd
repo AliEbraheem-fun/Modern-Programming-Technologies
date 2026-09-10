@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> RUNNABLE : start()
+    RUNNABLE --> BLOCKED : ждёт монитор (synchronized)
+    BLOCKED --> RUNNABLE : захват монитора
+    RUNNABLE --> WAITING : wait()/join()
+    WAITING --> RUNNABLE : notify()/interrupt()
+    RUNNABLE --> TIMED_WAITING : sleep()/wait(ms)
+    TIMED_WAITING --> RUNNABLE : notify()/interrupt() или timeout
+    RUNNABLE --> TERMINATED : run() завершён
+    TERMINATED --> [*]

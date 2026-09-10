@@ -1,0 +1,442 @@
+[
+ {
+  "chapter": 2,
+  "index": 1,
+  "stem": "ch02_fig01",
+  "kind": "classDiagram",
+  "source_file": "lecture2.md",
+  "source_line": 137,
+  "heading": "Структура класса SmartDevice",
+  "lines": 31
+ },
+ {
+  "chapter": 2,
+  "index": 2,
+  "stem": "ch02_fig02",
+  "kind": "classDiagram",
+  "source_file": "lecture2.md",
+  "source_line": 361,
+  "heading": "Иерархия наследования в примере",
+  "lines": 27
+ },
+ {
+  "chapter": 2,
+  "index": 3,
+  "stem": "ch02_fig03",
+  "kind": "classDiagram",
+  "source_file": "lecture2.md",
+  "source_line": 486,
+  "heading": "Правила для наследников sealed-класса",
+  "lines": 18
+ },
+ {
+  "chapter": 2,
+  "index": 4,
+  "stem": "ch02_fig04",
+  "kind": "classDiagram",
+  "source_file": "lecture2.md",
+  "source_line": 631,
+  "heading": "Иерархия интерфейсов в примере",
+  "lines": 28
+ },
+ {
+  "chapter": 2,
+  "index": 5,
+  "stem": "ch02_fig05",
+  "kind": "flowchart",
+  "source_file": "lecture2.md",
+  "source_line": 825,
+  "heading": "Массивы в памяти",
+  "lines": 5
+ },
+ {
+  "chapter": 2,
+  "index": 6,
+  "stem": "ch02_fig06",
+  "kind": "flowchart",
+  "source_file": "lecture2.md",
+  "source_line": 835,
+  "heading": "Массивы в памяти",
+  "lines": 7
+ },
+ {
+  "chapter": 2,
+  "index": 7,
+  "stem": "ch02_fig07",
+  "kind": "flowchart",
+  "source_file": "lecture2.md",
+  "source_line": 1033,
+  "heading": "String Pool и сравнение строк",
+  "lines": 18
+ },
+ {
+  "chapter": 4,
+  "index": 1,
+  "stem": "ch04_fig01",
+  "kind": "classDiagram",
+  "source_file": "lecture4.md",
+  "source_line": 543,
+  "heading": "4.1 Иерархия исключений",
+  "lines": 26
+ },
+ {
+  "chapter": 5,
+  "index": 1,
+  "stem": "ch05_fig01",
+  "kind": "classDiagram",
+  "source_file": "lecture5.md",
+  "source_line": 23,
+  "heading": "1.2 Иерархия интерфейсов",
+  "lines": 34
+ },
+ {
+  "chapter": 5,
+  "index": 2,
+  "stem": "ch05_fig02",
+  "kind": "classDiagram",
+  "source_file": "lecture5.md",
+  "source_line": 62,
+  "heading": "1.2 Иерархия интерфейсов",
+  "lines": 12
+ },
+ {
+  "chapter": 5,
+  "index": 3,
+  "stem": "ch05_fig03",
+  "kind": "classDiagram",
+  "source_file": "lecture5.md",
+  "source_line": 287,
+  "heading": "2.2 Байтовые потоки",
+  "lines": 14
+ },
+ {
+  "chapter": 5,
+  "index": 4,
+  "stem": "ch05_fig04",
+  "kind": "classDiagram",
+  "source_file": "lecture5.md",
+  "source_line": 306,
+  "heading": "2.2 Байтовые потоки",
+  "lines": 15
+ },
+ {
+  "chapter": 5,
+  "index": 5,
+  "stem": "ch05_fig05",
+  "kind": "classDiagram",
+  "source_file": "lecture5.md",
+  "source_line": 347,
+  "heading": "2.3 Символьные потоки",
+  "lines": 11
+ },
+ {
+  "chapter": 5,
+  "index": 6,
+  "stem": "ch05_fig06",
+  "kind": "classDiagram",
+  "source_file": "lecture5.md",
+  "source_line": 363,
+  "heading": "2.3 Символьные потоки",
+  "lines": 10
+ },
+ {
+  "chapter": 5,
+  "index": 7,
+  "stem": "ch05_fig07",
+  "kind": "flowchart",
+  "source_file": "lecture5.md",
+  "source_line": 484,
+  "heading": "3.2 Процессы и потоки",
+  "lines": 10
+ },
+ {
+  "chapter": 5,
+  "index": 8,
+  "stem": "ch05_fig08",
+  "kind": "stateDiagram-v2",
+  "source_file": "lecture5.md",
+  "source_line": 556,
+  "heading": "3.4 Жизненный цикл потока",
+  "lines": 11
+ },
+ {
+  "chapter": 6,
+  "index": 1,
+  "stem": "ch06_fig01",
+  "kind": "flowchart",
+  "source_file": "lecture6.md",
+  "source_line": 39,
+  "heading": "Стандартная структура проекта",
+  "lines": 12
+ },
+ {
+  "chapter": 6,
+  "index": 2,
+  "stem": "ch06_fig02",
+  "kind": "flowchart",
+  "source_file": "lecture6.md",
+  "source_line": 181,
+  "heading": "Стандартная структура (аналогична Maven)",
+  "lines": 6
+ },
+ {
+  "chapter": 6,
+  "index": 3,
+  "stem": "ch06_fig03",
+  "kind": "flowchart",
+  "source_file": "lecture6.md",
+  "source_line": 302,
+  "heading": "2.1 Что такое JDBC?",
+  "lines": 5
+ },
+ {
+  "chapter": 6,
+  "index": 4,
+  "stem": "ch06_fig04",
+  "kind": "flowchart",
+  "source_file": "lecture6.md",
+  "source_line": 1530,
+  "heading": "6.1 Поток данных против коллекции",
+  "lines": 2
+ },
+ {
+  "chapter": 7,
+  "index": 1,
+  "stem": "ch07_fig01",
+  "kind": "flowchart",
+  "source_file": "lecture7.md",
+  "source_line": 379,
+  "heading": "6.1 Паттерн MVC",
+  "lines": 5
+ },
+ {
+  "chapter": 8,
+  "index": 1,
+  "stem": "ch08_fig01",
+  "kind": "flowchart",
+  "source_file": "lecture8.md",
+  "source_line": 34,
+  "heading": "1.2 Двухзвенная архитектура",
+  "lines": 2
+ },
+ {
+  "chapter": 8,
+  "index": 2,
+  "stem": "ch08_fig02",
+  "kind": "flowchart",
+  "source_file": "lecture8.md",
+  "source_line": 52,
+  "heading": "1.3 Трёхзвенная архитектура",
+  "lines": 3
+ },
+ {
+  "chapter": 8,
+  "index": 3,
+  "stem": "ch08_fig03",
+  "kind": "flowchart",
+  "source_file": "lecture8.md",
+  "source_line": 152,
+  "heading": "2.4 Типичная связка в продакшене",
+  "lines": 4
+ },
+ {
+  "chapter": 8,
+  "index": 4,
+  "stem": "ch08_fig04",
+  "kind": "flowchart",
+  "source_file": "lecture8.md",
+  "source_line": 165,
+  "heading": "2.5 Развёртывание: WAR против исполняемого JAR",
+  "lines": 7
+ },
+ {
+  "chapter": 8,
+  "index": 5,
+  "stem": "ch08_fig05",
+  "kind": "stateDiagram-v2",
+  "source_file": "lecture8.md",
+  "source_line": 620,
+  "heading": "7.2 Жизненный цикл сервлета",
+  "lines": 6
+ },
+ {
+  "chapter": 8,
+  "index": 6,
+  "stem": "ch08_fig06",
+  "kind": "flowchart",
+  "source_file": "lecture8.md",
+  "source_line": 1006,
+  "heading": "7.9 Что из этого делает Spring",
+  "lines": 12
+ },
+ {
+  "chapter": 9,
+  "index": 1,
+  "stem": "ch09_fig01",
+  "kind": "flowchart",
+  "source_file": "lecture9.md",
+  "source_line": 158,
+  "heading": "2.3 Структура проекта",
+  "lines": 12
+ },
+ {
+  "chapter": 9,
+  "index": 2,
+  "stem": "ch09_fig02",
+  "kind": "flowchart",
+  "source_file": "lecture9.md",
+  "source_line": 271,
+  "heading": "3.2 Жизненный цикл: launch → init → start → stop",
+  "lines": 11
+ },
+ {
+  "chapter": 9,
+  "index": 3,
+  "stem": "ch09_fig03",
+  "kind": "flowchart",
+  "source_file": "lecture9.md",
+  "source_line": 502,
+  "heading": "5.1 Что это такое",
+  "lines": 15
+ },
+ {
+  "chapter": 9,
+  "index": 4,
+  "stem": "ch09_fig04",
+  "kind": "classDiagram",
+  "source_file": "lecture9.md",
+  "source_line": 526,
+  "heading": "5.2 Иерархия классов узлов",
+  "lines": 52
+ },
+ {
+  "chapter": 9,
+  "index": 5,
+  "stem": "ch09_fig05",
+  "kind": "sequenceDiagram",
+  "source_file": "lecture9.md",
+  "source_line": 1138,
+  "heading": "8.4 Распространение событий: захват и всплытие",
+  "lines": 10
+ },
+ {
+  "chapter": 9,
+  "index": 6,
+  "stem": "ch09_fig06",
+  "kind": "flowchart",
+  "source_file": "lecture9.md",
+  "source_line": 1701,
+  "heading": "13.2 Поток управления",
+  "lines": 9
+ },
+ {
+  "chapter": 10,
+  "index": 1,
+  "stem": "ch10_fig01",
+  "kind": "flowchart",
+  "source_file": "lecture10.md",
+  "source_line": 533,
+  "heading": "6.3 Где живут тесты",
+  "lines": 5
+ },
+ {
+  "chapter": 10,
+  "index": 2,
+  "stem": "ch10_fig02",
+  "kind": "flowchart",
+  "source_file": "lecture10.md",
+  "source_line": 725,
+  "heading": "7.5 Жизненный цикл и @TestInstance",
+  "lines": 6
+ },
+ {
+  "chapter": 12,
+  "index": 1,
+  "stem": "ch12_fig01",
+  "kind": "flowchart",
+  "source_file": "lecture12.md",
+  "source_line": 87,
+  "heading": "2.2 Четыре типа объектов",
+  "lines": 7
+ },
+ {
+  "chapter": 12,
+  "index": 2,
+  "stem": "ch12_fig02",
+  "kind": "flowchart",
+  "source_file": "lecture12.md",
+  "source_line": 135,
+  "heading": "3.1 Рабочий каталог, индекс и репозиторий",
+  "lines": 5
+ },
+ {
+  "chapter": 12,
+  "index": 3,
+  "stem": "ch12_fig03",
+  "kind": "gitGraph",
+  "source_file": "lecture12.md",
+  "source_line": 311,
+  "heading": "4.2 Быстрая перемотка (fast-forward)",
+  "lines": 6
+ },
+ {
+  "chapter": 12,
+  "index": 4,
+  "stem": "ch12_fig04",
+  "kind": "gitGraph",
+  "source_file": "lecture12.md",
+  "source_line": 322,
+  "heading": "4.2 Быстрая перемотка (fast-forward)",
+  "lines": 8
+ },
+ {
+  "chapter": 12,
+  "index": 5,
+  "stem": "ch12_fig05",
+  "kind": "gitGraph",
+  "source_file": "lecture12.md",
+  "source_line": 348,
+  "heading": "4.3 Трёхстороннее слияние (three-way merge)",
+  "lines": 9
+ },
+ {
+  "chapter": 12,
+  "index": 6,
+  "stem": "ch12_fig06",
+  "kind": "gitGraph",
+  "source_file": "lecture12.md",
+  "source_line": 364,
+  "heading": "4.3 Трёхстороннее слияние (three-way merge)",
+  "lines": 10
+ },
+ {
+  "chapter": 12,
+  "index": 7,
+  "stem": "ch12_fig07",
+  "kind": "gitGraph",
+  "source_file": "lecture12.md",
+  "source_line": 552,
+  "heading": "6.1 Что делает rebase",
+  "lines": 9
+ },
+ {
+  "chapter": 12,
+  "index": 8,
+  "stem": "ch12_fig08",
+  "kind": "gitGraph",
+  "source_file": "lecture12.md",
+  "source_line": 566,
+  "heading": "6.1 Что делает rebase",
+  "lines": 8
+ },
+ {
+  "chapter": 12,
+  "index": 9,
+  "stem": "ch12_fig09",
+  "kind": "xychart-beta",
+  "source_file": "lecture12.md",
+  "source_line": 1248,
+  "heading": "11.6 Оценка и метрики",
+  "lines": 6
+ }
+]

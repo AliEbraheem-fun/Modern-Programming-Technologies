@@ -1,0 +1,22 @@
+node_modules/
+build/
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+_check_*.tex
+test_*.pdf
+test_*.aux
+test_*.log
+test_*.out
+
+# кеш minted (пересоздаётся при сборке)
+_minted/
+*.minted
+# итоговый PDF: пересобирается из исходников
+posobie.pdf

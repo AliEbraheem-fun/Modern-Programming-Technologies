@@ -1,0 +1,12 @@
+flowchart TD
+    ROOT["student-manager/"] --> POM["pom.xml"]
+    ROOT --> SRC["src/main/"]
+    SRC --> JAVA["java/com/example/studentmanager/"]
+    JAVA --> MAIN["MainApp.java — наследник Application"]
+    JAVA --> LAUNCHER["Launcher.java — запасная точка входа (см. 2.5)"]
+    JAVA --> CTRL["controller/StudentController.java"]
+    JAVA --> MODEL["model/Student.java"]
+    JAVA --> SVC["service/StudentService.java"]
+    SRC --> RES["resources/com/example/studentmanager/"]
+    RES --> FXML["students-view.fxml — разметка окна"]
+    RES --> CSS["styles.css — таблица стилей"]

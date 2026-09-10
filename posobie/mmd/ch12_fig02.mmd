@@ -1,0 +1,5 @@
+flowchart LR
+    WD["Рабочий каталог<br/>ваши файлы на диске"] -- "git add" --> IDX["Индекс (staging area)<br/>что попадёт в следующий коммит"]
+    IDX -- "git commit" --> REPO["Репозиторий (.git)<br/>история коммитов"]
+    IDX -- "git restore --staged" --> WD
+    REPO -- "git restore / git checkout" --> WD

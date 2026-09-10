@@ -1,0 +1,52 @@
+classDiagram
+    class Node { <<abstract>> }
+    Node <|-- Canvas
+    Node <|-- ImageView
+    Node <|-- MediaView
+    Node <|-- Shape
+    Shape <|-- Rectangle
+    Shape <|-- Circle
+    Shape <|-- Ellipse
+    Shape <|-- Line
+    Shape <|-- Polygon
+    Shape <|-- Text
+    Node <|-- Parent
+    Parent <|-- Group
+    Parent <|-- Region
+    Region <|-- Pane
+    Pane <|-- VBox
+    Pane <|-- HBox
+    Pane <|-- StackPane
+    Pane <|-- FlowPane
+    Pane <|-- TilePane
+    Pane <|-- BorderPane
+    Pane <|-- GridPane
+    Pane <|-- AnchorPane
+    Region <|-- Control
+    Control <|-- Labeled
+    Labeled <|-- Label
+    Control <|-- ButtonBase
+    ButtonBase <|-- Button
+    Control <|-- CheckBox
+    Control <|-- ToggleButton
+    ToggleButton <|-- RadioButton
+    Control <|-- TextInputControl
+    TextInputControl <|-- TextArea
+    TextInputControl <|-- TextField
+    TextField <|-- PasswordField
+    Control <|-- ComboBoxBase
+    ComboBoxBase <|-- ComboBox
+    ComboBoxBase <|-- DatePicker
+    ComboBoxBase <|-- ColorPicker
+    Control <|-- ListView
+    Control <|-- TableView
+    Control <|-- TreeView
+    Control <|-- TabPane
+    Control <|-- ScrollPane
+
+    note for Canvas "холст для императивного рисования"
+    note for ImageView "изображение"
+    note for MediaView "видео"
+    note for Text "текст как фигура (не элемент управления!)"
+    note for Group "простой контейнер, раскладку не делает"
+    note for Region "узел с фоном, рамкой, отступами и раскладкой — от него растут все панели и все элементы управления"

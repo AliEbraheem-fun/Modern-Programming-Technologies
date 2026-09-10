@@ -1,0 +1,27 @@
+classDiagram
+    class Trainable {
+        <<interface>>
+        +train() void
+        +praise() void
+    }
+    note for Trainable "praise() — метод по умолчанию (default)"
+    class Animal {
+        <<abstract>>
+        #name String
+        +sleep() void
+        +makeSound() void*
+        #move() void*
+    }
+    class Dog {
+        +makeSound()
+        #move()
+        +train()
+    }
+    class Bird {
+        +makeSound()
+        #move()
+        +train()
+    }
+    Trainable <|.. Animal : implements
+    Animal <|-- Dog
+    Animal <|-- Bird

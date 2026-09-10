@@ -1,0 +1,48 @@
+% ============================================================
+%  Современные технологии программирования
+%  Учебное пособие
+%  Компиляция: xelatex posobie.tex  (дважды, для оглавления)
+% ============================================================
+\documentclass[14pt,a4paper,oneside]{extbook}
+\input{preamble}
+
+\begin{document}
+
+% ---------- Передний блок ----------
+\frontmatter
+\input{front/titul}
+\input{front/oborot}
+
+\tableofcontents
+
+\input{front/sokrashcheniya}
+\input{front/vvedenie}
+
+% ---------- Основной текст ----------
+\mainmatter
+
+\input{chapters/ch01}
+\input{chapters/ch02}
+\input{chapters/ch03}
+\input{chapters/ch04}
+\input{chapters/ch05}
+\input{chapters/ch06}
+\input{chapters/ch07}
+\input{chapters/ch08}
+\input{chapters/ch09}
+\input{chapters/ch10}
+\input{chapters/ch11}
+\input{chapters/ch12}
+
+% ---------- Задний блок ----------
+\backmatter
+
+\input{back/zaklyuchenie}
+\input{back/glossariy}
+\input{back/literatura}
+
+\appendix
+\input{back/app_keys}
+\input{back/app_setup}
+
+\end{document}

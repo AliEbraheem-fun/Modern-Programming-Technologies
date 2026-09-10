@@ -1,0 +1,26 @@
+classDiagram
+    Throwable <|-- Error
+    Error <|-- OutOfMemoryError
+    Error <|-- StackOverflowError
+    Error <|-- AssertionError
+    Throwable <|-- Exception
+    Exception <|-- RuntimeException
+    RuntimeException <|-- NullPointerException
+    RuntimeException <|-- ArrayIndexOutOfBoundsException
+    RuntimeException <|-- ClassCastException
+    RuntimeException <|-- IllegalArgumentException
+    RuntimeException <|-- IllegalStateException
+    RuntimeException <|-- ArithmeticException
+    Exception <|-- IOException
+    IOException <|-- FileNotFoundException
+    IOException <|-- EOFException
+    Exception <|-- SQLException
+    Exception <|-- ParseException
+
+    class Error {
+        <<непроверяемые, не нужно обрабатывать>>
+    }
+    class RuntimeException {
+        <<непроверяемые — unchecked>>
+    }
+    note for IOException "IOException, SQLException, ParseException — проверяемые (checked), т.к. не наследники RuntimeException"

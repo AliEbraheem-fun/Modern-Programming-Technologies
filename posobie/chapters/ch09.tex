@@ -1,0 +1,1712 @@
+\chapter{Графические интерфейсы на JavaFX}
+\label{ch:09}
+
+До сих пор наши программы общались с пользователем через консоль или через
+браузер: в главе~\ref{ch:06} мы научились хранить данные в базе, в
+главе~\ref{ch:07} подняли приложение на Spring, в главе~\ref{ch:08} разобрали
+устройство веб-архитектуры. Но есть большой класс программ, которым браузер не
+нужен: терминал банковского операциониста, редактор схем, программа складского
+учёта. Они запускаются локально, работают быстро и имеют прямой доступ к файлам
+и оборудованию; такие программы называют настольными (\eng{desktop}), и в Java
+их пишут на JavaFX. В этой главе вы подключите JavaFX к проекту, разберётесь в
+жизненном цикле приложения и графе сцены, научитесь раскладывать элементы по
+окну, обрабатывать нажатия, связывать данные с интерфейсом привязками, выносить
+разметку в FXML и оформлять её через CSS. Завершает главу сквозной пример~---
+«Менеджер студентов», собранный по шаблону MVC.
+
+Если продолжать строительную аналогию, до сих пор мы прокладывали инженерные
+коммуникации: трубы, проводку, фундамент. Теперь займёмся тем, что видит и
+трогает жилец,~--- дверными ручками, выключателями и обоями. Работа не менее
+ответственная: именно по ней пользователь судит обо всей системе.
+
+\section{JavaFX среди графических библиотек Java}
+
+За тридцать лет в Java сменилось три поколения графических библиотек, и
+различать их полезно: код всех трёх до сих пор встречается в живых проектах.
+
+\term{AWT} (\eng{Abstract Window Toolkit}, 1995) не рисовал элементы сам: он
+просил операционную систему создать «настоящий» системный элемент (такие
+компоненты называют \term{тяжеловесными}). Приложение выглядело как родное для
+системы, но набор элементов пришлось урезать до общего знаменателя всех
+платформ. Это как сеть кофеен, заказывающая стулья у местного столяра в каждом
+городе: в Москве сделают один стул, в Токио~--- другой, а если токийский столяр
+не умеет делать подлокотники, от них придётся отказаться во всей сети.
+
+\term{Swing} (1998) рисует все элементы сам средствами Java~2D
+(\term{легковесные} компоненты): стулья теперь делает собственная фабрика, они
+одинаковы везде и могут быть какими угодно. Swing огромен и до сих пор работает
+в промышленных системах, но его архитектура родом из девяностых: разметка
+задаётся только кодом, стилизация болезненна, анимации почти нет.
+
+\term{JavaFX} (2008, современный вид~--- с 2011~года)~--- третье поколение и
+официальная рекомендация для новых настольных приложений: здесь взяли лучшее от
+Swing и добавили то, что к тому времени стало нормой в вебе. Различия поколений
+сведены в табл.~\ref{tab:09-1}; главные строки~--- две последние, именно они
+определяют выбор для нового проекта.
+
+\begin{table}[htbp]
+\caption{Три поколения графических библиотек Java}
+\label{tab:09-1}
+\centering
+\begin{tabular}{L{3.6cm}L{3.2cm}L{3.8cm}L{4.2cm}}
+\toprule
+Характеристика & AWT & Swing & JavaFX \\
+\midrule
+Год появления & 1995 & 1998 & 2008 \\
+Компоненты & тяжеловесные & легковесные & легковесные, ускоренные \\
+Внешний вид & как в системе & единый, настраиваемый & единый, настраивается CSS \\
+Разметка & только код & только код & код или FXML \\
+Привязка данных & нет & нет & свойства и привязки \\
+Входит в JDK & да & да & нет, начиная с JDK~11 \\
+Статус & устарел & поддерживается & активно развивается \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Четыре особенности JavaFX стоит назвать отдельно. \term{Граф сцены}
+(\eng{scene graph}): интерфейс~--- дерево объектов, а не набор команд рисования;
+вы описываете, \emph{что} находится на экране, а не \emph{как} это нарисовать.
+\term{Разделение разметки и логики}: интерфейс описывается в XML-файле FXML,
+поведение~--- в классе-контроллере. \term{CSS-оформление}: цвета, шрифты и
+отступы меняются без перекомпиляции. \term{Свойства и привязки}: значение поля
+ввода можно связать с текстом метки, и она обновится сама. Добавьте сюда
+аппаратное ускорение через конвейер \eng{Prism} и богатый набор компонентов~---
+от кнопки до таблиц, диаграмм и встроенного браузера \texttt{WebView}.
+
+\begin{vrezka}
+\textbf{Почему JavaFX больше не входит в JDK.} До Java~10 включительно JavaFX
+поставлялся вместе с Oracle JDK. Начиная с JDK~11 (2018) его вынесли в отдельный
+проект с открытым исходным кодом~--- OpenJFX. Причин три: JavaFX развивается
+быстрее самой Java, и привязка к релизам JDK его тормозила; серверному
+приложению графика не нужна и только раздувает дистрибутив; отдельный модуль
+легче версионировать. Следствие жёсткое: если просто поставить JDK~21 и написать
+\texttt{import javafx.application.Application;}, проект не скомпилируется.
+Поэтому следующий раздел пропускать нельзя~--- без него не запустится ни один
+пример главы.
+\end{vrezka}
+
+\section{Подключение JavaFX через Maven}
+
+Раньше набор отвёрток лежал в общем ящике, который выдавали каждому новому
+сотруднику. Теперь ящик легче, а отвёртки заказывают отдельной коробкой и
+указывают, где она лежит. Неудобно ровно один раз~--- при настройке проекта.
+
+JavaFX разбит на модули, и подключать все семь не нужно (табл.~\ref{tab:09-2}):
+для большинства задач хватает двух верхних строк, поскольку
+\texttt{javafx-controls} сам подтягивает \texttt{javafx-graphics} и
+\texttt{javafx-base}.
+
+\begin{table}[htbp]
+\caption{Модули JavaFX и их назначение}
+\label{tab:09-2}
+\centering
+\begin{tabular}{L{4.2cm}L{10.8cm}}
+\toprule
+Модуль & За что отвечает \\
+\midrule
+\texttt{javafx-controls} & элементы управления: \texttt{Button}, \texttt{Label}, \texttt{TableView} \\
+\texttt{javafx-fxml} & загрузка интерфейса из файлов разметки FXML \\
+\texttt{javafx-graphics} & граф сцены, \texttt{Stage}, \texttt{Scene}, геометрия, анимация \\
+\texttt{javafx-base} & свойства, привязки, наблюдаемые коллекции \\
+\texttt{javafx-web} & компонент \texttt{WebView}~--- браузер на движке WebKit \\
+\texttt{javafx-media} & воспроизведение аудио и видео \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Сборочный файл проекта показан в листинге~\ref{lst:09-1}. Обратите внимание на
+две детали: версия JavaFX вынесена в свойство и меняется одной строкой, а плагин
+\texttt{javafx-maven-plugin} нужен затем, чтобы запускать приложение с правильным
+путём к модулям~--- вручную его пришлось бы прописывать каждый раз.
+
+\begin{listing}[H]
+\begin{minted}{xml}
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>student-manager</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javafx.version>21.0.2</javafx.version>
+  </properties>
+
+  <dependencies>
+    <dependency>  <!-- тянет graphics и base -->
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-fxml</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build><plugins>
+    <plugin>  <!-- запуск с правильным module-path -->
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-maven-plugin</artifactId>
+      <version>0.0.8</version>
+      <configuration>
+        <mainClass>com.example.manager.MainApp</mainClass>
+      </configuration>
+    </plugin>
+  </plugins></build>
+</project>
+\end{minted}
+\caption{Сборочный файл pom.xml проекта с JavaFX}
+\label{lst:09-1}
+\end{listing}
+
+Важная деталь: у зависимостей \texttt{org.openjfx} не указан классификатор
+операционной системы. Их собственный сборочный файл сам определяет, на чём вы
+работаете, и подставляет нужную сборку~--- поэтому один и тот же
+\texttt{pom.xml} годится и для Windows, и для Linux, и для macOS.
+
+Раскладка файлов проекта показана на рис.~\ref{fig:09-1}. Главное соглашение
+здесь такое: FXML и CSS кладут в \texttt{src/main/resources}, повторяя структуру
+пакетов. Тогда файл, лежащий «рядом» с классом, находится вызовом
+\texttt{MainApp.class.getResource("students-view.fxml")}~--- без абсолютных путей
+и без догадок о том, куда сборщик положил ресурсы.
+
+\begin{figure}[htbp]\centering
+\begin{forest} hierarchy
+[student-manager/
+  [pom.xml]
+  [src/main/
+    [java/com/example/manager/
+      [MainApp.java]
+      [Launcher.java]
+      [controller/StudentController.java]
+      [model/Student.java]
+      [service/StudentService.java]
+    ]
+    [resources/com/example/manager/
+      [students-view.fxml]
+      [styles.css]
+    ]
+  ]
+]
+\end{forest}
+\caption{Структура проекта настольного приложения}\label{fig:09-1}
+\end{figure}
+
+Собирается и запускается проект двумя командами, одинаковыми на всех системах:
+\texttt{mvn clean compile} скачивает зависимости и компилирует код, а
+\texttt{mvn javafx:run} запускает приложение, попутно копируя разметку и стили в
+каталог \texttt{target/classes}.
+
+Самая частая ошибка запуска~--- сообщение
+\texttt{JavaFX runtime components are missing}: класс с методом \texttt{main}
+наследует \texttt{Application}, а модули JavaFX попали в \texttt{classpath}, а не
+в путь к модулям (типично при запуске из среды разработки). Надёжное и
+совершенно легальное решение~--- отдельный класс-запускалка, который
+\texttt{Application} не наследует (листинг~\ref{lst:09-2}): проверка внутри
+платформы тогда просто не срабатывает.
+
+\begin{listing}[H]
+\begin{minted}{java}
+package com.example.manager;
+
+/**
+ * Точка входа-обёртка. Не наследует Application, поэтому
+ * проверка не срабатывает и приложение стартует даже из IDE.
+ */
+public class Launcher {
+    public static void main(String[] args) {
+        MainApp.main(args);
+    }
+}
+\end{minted}
+\caption{Класс-запускалка в обход проверки JavaFX}
+\label{lst:09-2}
+\end{listing}
+
+Вторая по частоте~--- \texttt{Location is required} из загрузчика разметки:
+значит, \texttt{getResource()} вернул \texttt{null}, потому что файл лежит в
+\texttt{src/main/java} вместо \texttt{src/main/resources}, перепутан путь или
+проект не пересобран.
+
+\section{Класс Application и жизненный цикл приложения}
+
+Любое приложение JavaFX начинается с класса, наследующего абстрактный класс
+\texttt{javafx.application.Application} (листинг~\ref{lst:09-3}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+package com.example.manager;
+
+// импорты: Application, Scene, Label, StackPane, Stage
+
+public class HelloApp extends Application {
+
+    // Единственный абстрактный метод класса Application
+    @Override
+    public void start(Stage primaryStage) {
+        Label label = new Label("Здравствуй, JavaFX!");
+        StackPane root = new StackPane(label);   // корень графа сцены
+        Scene scene = new Scene(root, 400, 200); // сцена 400 на 200
+
+        primaryStage.setTitle("Моё первое окно");
+        primaryStage.setScene(scene);
+        primaryStage.show();      // без этой строки окна не будет
+    }
+
+    public static void main(String[] args) {
+        launch(args);             // запуск среды выполнения JavaFX
+    }
+}
+\end{minted}
+\caption{Минимальное приложение JavaFX}
+\label{lst:09-3}
+\end{listing}
+
+Метод \texttt{start} получает готовое окно и наполняет его содержимым: метка
+кладётся в панель, панель становится корнем сцены, сцена ставится в окно, окно
+показывается. Метод \texttt{main} вызывает унаследованный \texttt{launch}, а тот
+запускает целую машину (рис.~\ref{fig:09-2}): порядок шагов на схеме~--- это
+порядок, в котором платформа передаёт управление вашим методам.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\small,node distance=5mm,
+  st/.style={draw,rounded corners=2pt,align=center,text width=92mm,
+    inner sep=4pt,minimum height=9mm}]
+\node[st] (a) {\texttt{main()} вызывает \texttt{launch(args)}};
+\node[st,below=of a] (b) {Запускается среда выполнения JavaFX; объект
+  приложения создаётся через рефлексию};
+\node[st,below=of b] (c) {Вызывается \texttt{init()}\\
+  \scriptsize поток JavaFX-Launcher};
+\node[st,below=of c] (d) {Создаётся первичный \texttt{Stage}, вызывается
+  \texttt{start(stage)}\\\scriptsize поток JavaFX Application Thread};
+\node[st,below=of d] (e) {Приложение живёт и обрабатывает события до закрытия
+  последнего окна или вызова \texttt{Platform.exit()}};
+\node[st,below=of e] (f) {Вызывается \texttt{stop()}, среда завершается,
+  управление возвращается в \texttt{main()}};
+\draw[flowarrow] (a) -- (b);
+\draw[flowarrow] (b) -- (c);
+\draw[flowarrow] (c) -- (d);
+\draw[flowarrow] (d) -- (e);
+\draw[flowarrow] (e) -- (f);
+\end{tikzpicture}
+\caption{Жизненный цикл приложения JavaFX}\label{fig:09-2}
+\end{figure}
+
+Три метода жизненного цикла вы можете переопределить, и у каждого своя зона
+ответственности (табл.~\ref{tab:09-3}). Обязателен только \texttt{start}: он
+объявлен абстрактным.
+
+\begin{table}[htbp]
+\caption{Методы жизненного цикла приложения}
+\label{tab:09-3}
+\centering
+\begin{tabular}{L{2.4cm}L{3.4cm}L{3.6cm}L{5.2cm}}
+\toprule
+Метод & Когда вызывается & В каком потоке & Что в нём делают \\
+\midrule
+\texttt{init()} & один раз, до создания окна & JavaFX-Launcher & читают настройки, подключаются к базе; создавать окно и сцену нельзя \\
+\texttt{start()} & один раз, после \texttt{init()} & JavaFX Application Thread & строят граф сцены и показывают окно \\
+\texttt{stop()} & при завершении приложения & JavaFX Application Thread & сохраняют настройки, закрывают соединения \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Аналогия проясняет запрет из первой строки таблицы. \texttt{init()}~--- это
+подготовка на кухне до открытия кафе: продукты заказали, печь включили, зал ещё
+закрыт. \texttt{start()}~--- открыли двери и обслуживаем гостей.
+\texttt{stop()}~--- закрылись, убрали столы, выключили свет. Готовить салаты в
+зале при гостях, то есть создавать окно в \texttt{init()}, нельзя: зала ещё
+физически нет.
+
+Весь граф сцены живёт в одном потоке~--- \term{JavaFX Application Thread}. Любое
+изменение интерфейса должно происходить в нём; попытка сделать это из другого
+потока даёт \texttt{IllegalStateException: Not on FX application thread}. Тот же
+принцип действует в Swing и в браузере: иначе пришлось бы синхронизировать
+каждое поле каждого узла, и интерфейс стал бы невыносимо медленным. Обратная
+сторона правила~--- длинную работу в этом потоке выполнять нельзя, иначе окно
+«зависнет»: оно просто не сможет перерисоваться. Как мы разбирали в
+главе~\ref{ch:05}, тяжёлые операции выносят в отдельные потоки, а результат
+возвращают в интерфейс через \texttt{Platform.runLater()}
+(листинг~\ref{lst:09-4}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+Thread worker = new Thread(() -> {
+    String result = downloadFromServer();   // долгая операция
+
+    // Только внутри runLater можно трогать узлы интерфейса
+    Platform.runLater(() ->
+            statusLabel.setText("Загружено: " + result));
+});
+worker.setDaemon(true);   // не мешает приложению завершиться
+worker.start();
+\end{minted}
+\caption{Возврат результата фоновой работы в интерфейс}
+\label{lst:09-4}
+\end{listing}
+
+\begin{oshibka}
+\textbf{Частая ошибка: выход через System.exit.} Вызов \texttt{System.exit(0)}
+обрывает работу виртуальной машины немедленно и метод \texttt{stop()} не
+вызывает. Если в \texttt{stop()} вы сохраняете настройки или закрываете
+соединение с базой~--- всё это потеряется. Для завершения приложения JavaFX
+пользуйтесь \texttt{Platform.exit()}.
+\end{oshibka}
+
+\section{Stage, Scene и граф сцены}
+
+Терминология JavaFX взята из театра, и она объясняет структуру приложения лучше
+любой документации. \texttt{Stage}~--- сцена театра, то есть окно операционной
+системы: рама, заголовок, кнопки свернуть и закрыть, и здание сцены одно и то же
+весь вечер. \texttt{Scene}~--- сценическая картина: содержимое окна, которое
+между актами меняют целиком. \texttt{Node}~--- актёры и реквизит.
+
+Первичное окно платформа передаёт вам в \texttt{start()}; остальные вы создаёте
+сами оператором \texttt{new}. Настраивают окно методами \texttt{setTitle},
+\texttt{setScene}, \texttt{setMinWidth}, \texttt{setResizable}. Отдельного
+упоминания заслуживает \texttt{setOnCloseRequest}: его обработчик получает
+событие закрытия и может отменить его вызовом \texttt{event.consume()}~--- так
+спрашивают у пользователя, действительно ли он хочет выйти с несохранёнными
+данными. Метод \texttt{show()} возвращает управление немедленно, а
+\texttt{showAndWait()} останавливает выполнение до закрытия окна~--- именно он
+нужен диалогам, от которых ждут ответа. \term{Модальность} окна задаёт метод
+\texttt{initModality}: \texttt{APPLICATION\_MODAL} блокирует все окна
+приложения, \texttt{WINDOW\_MODAL}~--- только окно-владельца.
+
+У сцены обязательно есть \term{корневой узел} (\eng{root}), и он должен быть
+типа \texttt{Parent}~--- то есть узлом, способным иметь потомков: обычный
+\texttt{Node} корнем быть не может, дерево некуда ветвить. Одна и та же сцена не
+может стоять сразу в двух окнах, зато у одного окна сцену можно менять сколько
+угодно, и это самый простой способ сделать переход между экранами: строка
+\texttt{stage.setScene(mainScene)} мгновенно заменяет экран входа на главное
+окно.
+
+\subsection{Граф сцены и иерархия узлов}
+
+\term{Граф сцены} (\eng{scene graph})~--- дерево всех визуальных объектов
+приложения; корень дерева~--- тот узел, который вы передали в \texttt{Scene}.
+Аналогия~--- содержимое шкафа: шкаф (корневая панель) содержит полки (вложенные
+панели), полки~--- коробки, коробки~--- вещи. Чтобы вынести всю верхнюю полку,
+достаточно вынести один объект вместе со всем содержимым~--- именно так работает
+удаление узла в JavaFX.
+
+На рис.~\ref{fig:09-3} показан граф сцены окна с шапкой, таблицей и панелью
+ввода~--- ровно того окна, которое мы соберём в конце главы. Подписи
+\texttt{top}, \texttt{center} и \texttt{bottom} обозначают зоны панели
+\texttt{BorderPane}, о которых пойдёт речь в следующем разделе.
+
+\begin{figure}[htbp]\centering
+\begin{forest} hierarchy
+[Scene
+  [BorderPane -- корень
+    [top: Label «Менеджер студентов»]
+    [center: TableView
+      [TableColumn «ФИО»]
+      [TableColumn «Группа»]
+      [TableColumn «Средний балл»]
+    ]
+    [bottom: VBox
+      [GridPane
+        [Label «ФИО:»]
+        [TextField]
+      ]
+      [HBox
+        [Button «Добавить»]
+        [Button «Удалить»]
+      ]
+      [Label «Студентов в списке: 3»]
+    ]
+  ]
+]
+\end{forest}
+\caption{Граф сцены окна менеджера студентов}\label{fig:09-3}
+\end{figure}
+
+Всё, что можно поместить на сцену, наследует абстрактный класс
+\texttt{javafx.scene.Node}. Часть этой иерархии приведена на
+рис.~\ref{fig:09-4}; запоминать её целиком не нужно, но четыре уровня из неё
+знать обязательно.
+
+\begin{figure}[htbp]\centering
+\begin{forest} hierarchy
+[Node
+  [Canvas]
+  [ImageView]
+  [Shape
+    [Rectangle]
+    [Circle]
+    [Text]
+  ]
+  [Parent
+    [Group]
+    [Region
+      [Pane
+        [VBox]
+        [HBox]
+        [StackPane]
+        [BorderPane]
+        [GridPane]
+      ]
+      [Control
+        [Labeled [Label]]
+        [ButtonBase [Button]]
+        [TextInputControl [TextField] [TextArea]]
+        [ComboBox]
+        [ListView]
+        [TableView]
+      ]
+    ]
+  ]
+]
+\end{forest}
+\caption{Иерархия узлов графа сцены}\label{fig:09-4}
+\end{figure}
+
+\texttt{Node}~--- базовый класс любого визуального объекта; узел, который не
+является \texttt{Parent} (кнопка, картинка, круг),~--- лист дерева.
+\texttt{Parent}~--- ветвь: у него есть список потомков \texttt{getChildren()}, и
+именно \texttt{Parent} передаётся в конструктор сцены. \texttt{Region}~---
+\texttt{Parent} с прямоугольной областью, фоном, рамкой и отступами; отсюда
+растут все панели компоновки и все элементы управления. \texttt{Control}~---
+\texttt{Region} со сменной «шкурой» (\eng{skin}) и поддержкой CSS по умолчанию.
+
+\begin{oshibka}
+\textbf{Ловушка: Text и Label~--- разные вещи.} Класс
+\texttt{javafx.scene.text.Text}~--- это фигура (\texttt{Shape}), она нужна при
+рисовании графики. Для подписи в интерфейсе берут
+\texttt{javafx.scene.control.Label}: он наследует \texttt{Control}, умеет
+переносить текст по словам, показывать картинку рядом с текстом и связываться с
+полем ввода.
+\end{oshibka}
+
+С деревом узлов работают обычными методами списка. Вызов
+\texttt{getChildren().add(node)} добавляет потомка, \texttt{remove(node)}
+удаляет узел вместе со всем поддеревом, а \texttt{getParent()} ведёт вверх. Три правила при этом нарушают чаще всего. Первое: у узла может быть
+только один родитель~--- добавили кнопку в \texttt{VBox}, потом её же в
+\texttt{HBox}, и она молча исчезнет из \texttt{VBox}; нужны две одинаковые
+кнопки~--- создайте два объекта. Второе: менять граф сцены можно только из
+потока интерфейса. Третье: порядок в \texttt{getChildren()} определяет порядок
+отрисовки~--- свойства \texttt{z-index}, как в вебе, здесь нет, чем позже узел
+добавлен, тем он выше. Это стопка прозрачных плёнок у мультипликатора: положили
+новую сверху~--- она перекрыла всё, что лежит ниже; менять порядок на лету
+помогают \texttt{toFront()} и \texttt{toBack()}.
+
+Отдельная пара, которую регулярно путают,~--- \texttt{setVisible} и
+\texttt{setManaged}. Вызов \texttt{setVisible(false)} прячет узел, но панель
+компоновки продолжает резервировать под него место, и получается «дырка». Чтобы
+узел исчез совсем, нужен ещё \texttt{setManaged(false)}.
+
+\section{Панели компоновки}
+
+Расставить элементы по абсолютным координатам можно, но окно, которое
+разваливается при изменении размера или при другом системном шрифте,~--- плохое
+окно. \term{Панели компоновки} (\eng{layout panes}) сами вычисляют положение и
+размер потомков по заданному правилу.
+
+Аналогия с переездом: у вас есть коробки разных типов. В одну вещи складывают
+строго в столбик, в другую~--- в ряд, третья разделена на ячейки-сетку,
+четвёртая держит крупные предметы по краям, а лёгкие в центре. Вы не измеряете
+каждую вещь линейкой~--- вы выбираете подходящую коробку. Какая коробка для чего
+предназначена, показывает табл.~\ref{tab:09-4}.
+
+\begin{table}[htbp]
+\caption{Панели компоновки JavaFX}
+\label{tab:09-4}
+\centering
+\begin{tabular}{L{2.6cm}L{6.4cm}L{6.0cm}}
+\toprule
+Панель & Правило раскладки & Типичное применение \\
+\midrule
+\texttt{VBox} & потомки в столбик, сверху вниз & форма, боковое меню \\
+\texttt{HBox} & потомки в строку, слева направо & панель кнопок \\
+\texttt{BorderPane} & пять зон: верх, низ, лево, право, центр & каркас главного окна \\
+\texttt{GridPane} & сетка из строк и столбцов & формы «подпись~--- поле» \\
+\texttt{StackPane} & все потомки друг на друге, по центру & заглушка «Загрузка» \\
+\texttt{FlowPane} & в строку с переносом по ширине & плитка тегов, галерея \\
+\texttt{AnchorPane} & привязка к краям контейнера & точная подгонка \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Начнём с двух самых частых панелей~--- строки и столбца
+(листинг~\ref{lst:09-5}). Ключевая строка здесь третья: она объясняет, кто
+забирает свободное место при растягивании окна.
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Строка: поле растягивается, кнопка сохраняет свой размер
+HBox searchBar = new HBox(8, searchField, new Button("Найти"));
+HBox.setHgrow(searchField, Priority.ALWAYS);
+searchBar.setAlignment(Pos.CENTER_LEFT);
+
+VBox root = new VBox(12);            // 12 пикселей между потомками
+root.setPadding(new Insets(16));     // отступ от краёв панели
+root.getChildren().addAll(new Label("Поиск"), searchBar);
+
+VBox.setMargin(searchBar, new Insets(0, 0, 10, 0));
+\end{minted}
+\caption{Строка и столбец: HBox и VBox}
+\label{lst:09-5}
+\end{listing}
+
+Здесь встретились два понятия, которые регулярно путают.
+\term{Внутренний отступ} (\eng{padding})~--- расстояние от краёв панели до её
+потомков, задаётся самой панелью. \term{Внешний отступ} (\eng{margin})~---
+свободное место вокруг одного потомка, задаётся статическим методом панели:
+\texttt{VBox.setMargin(child, new Insets(10))}. Класс \texttt{Insets} принимает
+либо одно число, либо четыре~--- сверху, справа, снизу, слева.
+
+Панель \texttt{BorderPane} делит окно на пять зон и работает как газетная
+полоса: шапка сверху, подвал снизу, колонки по бокам, главный материал в центре.
+Центр забирает всё оставшееся место~--- то, что нужно таблице или редактору,~---
+а незанятые зоны места не занимают вовсе. Для форм идеальна панель
+\texttt{GridPane}: подписи в первом столбце, поля во втором
+(листинг~\ref{lst:09-6}). Порядок аргументов метода \texttt{add} путают чаще
+всего, поэтому запомните его отдельно: сначала номер столбца, потом номер
+строки, и нумерация идёт с нуля.
+
+\begin{listing}[H]
+\begin{minted}{java}
+GridPane grid = new GridPane();
+grid.setHgap(10);                // расстояние между столбцами
+grid.setVgap(10);                // расстояние между строками
+grid.setPadding(new Insets(20));
+
+// add(узел, номерСтолбца, номерСтроки) - нумерация с нуля
+grid.add(new Label("Логин:"), 0, 0);
+grid.add(new TextField(), 1, 0);
+grid.add(new Label("Пароль:"), 0, 1);
+grid.add(new PasswordField(), 1, 1);
+
+// add(узел, столбец, строка, ширина, высота) - в ячейках
+grid.add(new Button("Войти"), 0, 2, 2, 1);
+
+// Первый столбец фиксированный, второй растягивается
+ColumnConstraints labels = new ColumnConstraints(90);
+ColumnConstraints fields = new ColumnConstraints();
+fields.setHgrow(Priority.ALWAYS);
+grid.getColumnConstraints().addAll(labels, fields);
+\end{minted}
+\caption{Форма на панели GridPane}
+\label{lst:09-6}
+\end{listing}
+
+Полезный приём отладки: метод \texttt{setGridLinesVisible(true)} рисует линии
+сетки прямо в окне, и сразу видно, где узел «уехал». Панели свободно вкладываются друг в друга: почти любое
+реальное окно~--- это \texttt{BorderPane}, внутри которого \texttt{VBox}, внутри
+которого \texttt{GridPane} и \texttt{HBox}.
+
+\section{Элементы управления}
+
+Элементы управления~--- панель приборов вашего приложения: спидометр показывает
+(\texttt{Label}), руль принимает ввод (\texttt{TextField}), кнопка стартера
+запускает действие (\texttt{Button}). Водителю не нужно знать, как устроен
+датчик,~--- ему нужно, чтобы стрелка была на понятном месте.
+
+\texttt{Label} показывает текст, не принимает ввод и по умолчанию не получает
+фокус; самое сильное его применение~--- вывод результата через привязку, о
+которой речь пойдёт ниже. Поля ввода образуют семейство с общим предком
+\texttt{TextInputControl}: \texttt{TextField}~--- одна строка,
+\texttt{PasswordField}~--- она же с замаскированными символами,
+\texttt{TextArea}~--- много строк; общие методы у них одни и те же:
+\texttt{getText()}, \texttt{setText()}, \texttt{clear()}. Типичные приёмы работы
+собраны в листинге~\ref{lst:09-7}: обратите внимание на разницу между реакцией
+на клавишу Enter и реакцией на каждое изменение текста.
+
+\begin{listing}[H]
+\begin{minted}{java}
+TextField field = new TextField();
+field.setPromptText("Иванов");   // серая подсказка в пустом поле
+field.setPrefColumnCount(20);    // примерная ширина в символах
+
+// Реакция на Enter внутри поля
+field.setOnAction(event ->
+        System.out.println("Введено: " + field.getText()));
+
+// Реакция на каждое изменение текста
+field.textProperty().addListener((obs, oldText, newText) ->
+        System.out.println(oldText + " -> " + newText));
+
+// Поле, в которое можно ввести только цифры
+field.setTextFormatter(new TextFormatter<>(change ->
+        change.getControlNewText().matches("\\d*") ? change : null));
+\end{minted}
+\caption{Поля ввода и реакция на изменение текста}
+\label{lst:09-7}
+\end{listing}
+
+\begin{vrezka}
+\textbf{Важно.} \texttt{PasswordField} лишь маскирует символы при отрисовке:
+\texttt{getText()} возвращает настоящий введённый текст, а не строку из
+точек,~--- никакой дополнительной защиты этот класс не даёт.
+\end{vrezka}
+
+Кнопка \texttt{Button} наследует цепочку
+\texttt{ButtonBase}~$\to$~\texttt{Labeled}~$\to$~\texttt{Control}, поэтому умеет
+всё, что умеет подпись, и вдобавок реагирует на нажатие. Главный её метод~---
+\texttt{setOnAction}; \texttt{setDefaultButton(true)} заставляет кнопку
+срабатывать по клавише Enter в любом месте окна, \texttt{setCancelButton(true)}
+--- по клавише Escape, \texttt{setDisable(true)} отключает кнопку. Родственники
+кнопки различаются тем, сколько вариантов можно выбрать одновременно:
+\texttt{CheckBox}~--- независимый флажок; переключатели \texttt{RadioButton}
+объединяют в \texttt{ToggleGroup}, и тогда выбранным остаётся ровно один;
+\texttt{ComboBox} и \texttt{ListView} показывают список значений и экономят
+место на экране.
+
+\subsection{Таблица данных TableView}
+
+\texttt{TableView}~--- самый мощный и самый востребованный компонент JavaFX. Он
+состоит из трёх частей: самой таблицы \texttt{TableView<T>}, типизированной
+классом строки; столбцов \texttt{TableColumn<T, V>}, где \texttt{T}~--- тип
+строки, а \texttt{V}~--- тип значения в ячейке; и источника данных
+\texttt{ObservableList<T>}. Ключевой вопрос: откуда столбец берёт значение? За
+это отвечает \term{фабрика значений} (\eng{cellValueFactory}), и задать её можно
+двумя способами (листинг~\ref{lst:09-8}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+TableView<Student> table = new TableView<>();
+
+// Способ 1: по имени свойства, через рефлексию.
+// Ищет метод fullNameProperty(), а если нет - getFullName()
+TableColumn<Student, String> nameColumn = new TableColumn<>("ФИО");
+nameColumn.setCellValueFactory(new PropertyValueFactory<>("fullName"));
+
+// Способ 2: лямбда - типобезопасно, ошибку поймает компилятор
+TableColumn<Student, String> groupColumn = new TableColumn<>("Группа");
+groupColumn.setCellValueFactory(d -> d.getValue().groupProperty());
+
+table.getColumns().addAll(nameColumn, groupColumn);
+table.setItems(service.getStudents());       // связь со списком
+table.setPlaceholder(new Label("Список пуст"));
+
+// Реакция на выбор строки
+table.getSelectionModel().selectedItemProperty()
+        .addListener((obs, was, now) -> {
+            if (now != null) System.out.println(now.getFullName());
+        });
+\end{minted}
+\caption{Таблица, столбцы и источник данных}
+\label{lst:09-8}
+\end{listing}
+
+Про \texttt{PropertyValueFactory} нужно знать главное: он работает через
+рефлексию и ищет метод по соглашению об именах, поэтому опечатка в строке
+\texttt{"fullName"} не вызовет ошибки компиляции~--- столбец просто останется
+пустым. Поэтому в новом коде предпочтительнее лямбда; знать оба способа
+обязательно, так как первый встречается повсеместно в существующих проектах.
+
+Если фабрика значений отвечает на вопрос «откуда взять значение», то
+\term{фабрика ячеек} (\eng{cellFactory}) отвечает на вопрос «как его показать».
+В листинге~\ref{lst:09-9} она округляет средний балл до двух знаков после
+запятой; заодно здесь видно, зачем нужен вызов \texttt{asObject()}~--- числовое
+свойство работает с примитивом, а таблице нужен объект-обёртка.
+
+\begin{listing}[H]
+\begin{minted}{java}
+TableColumn<Student, Double> gradeColumn =
+        new TableColumn<>("Средний балл");
+
+// ОТКУДА берётся значение
+gradeColumn.setCellValueFactory(
+        d -> d.getValue().averageGradeProperty().asObject());
+
+// КАК оно выглядит
+gradeColumn.setCellFactory(column -> new TableCell<Student, Double>() {
+    @Override
+    protected void updateItem(Double value, boolean empty) {
+        super.updateItem(value, empty);
+        setText(empty || value == null
+                ? null
+                : String.format("%.2f", value));
+    }
+});
+\end{minted}
+\caption{Форматирование значения в ячейке}
+\label{lst:09-9}
+\end{listing}
+
+Писать собственное окно для типового сообщения не нужно~--- есть готовый класс
+\texttt{Alert} с типами \texttt{INFORMATION}, \texttt{WARNING}, \texttt{ERROR},
+\texttt{CONFIRMATION} и \texttt{NONE}. Текст задают методами
+\texttt{setHeaderText} и \texttt{setContentText}, а показывают диалог вызовом
+\texttt{showAndWait()}, который ждёт ответа и возвращает
+\texttt{Optional<ButtonType>}; пример разбора этого ответа есть в
+листинге~\ref{lst:09-16}. Наконец, пакет \texttt{javafx.scene.chart} строит
+диаграммы: гистограмме \texttt{BarChart} нужны пара осей и ряд
+\texttt{XYChart.Series} с данными. Но в отличие от таблицы диаграмма на список
+не подписана: после изменения данных её наполняют заново.
+
+\section{События, свойства и привязка данных}
+
+Событие~--- объект, описывающий, «что произошло». Все они наследуют
+\texttt{javafx.event.Event}, у которого есть источник (\texttt{getSource()}),
+цель (\texttt{getTarget()}), тип (\texttt{getEventType()}) и метод
+\texttt{consume()}~--- «событие обработано, дальше не передавать». Самые частые
+классы событий: \texttt{ActionEvent} (нажата кнопка, выбран пункт меню, нажат
+Enter в поле), \texttt{MouseEvent}, \texttt{KeyEvent} и \texttt{WindowEvent}.
+
+Обработчик события~--- реализация функционального интерфейса
+\texttt{EventHandler} с единственным методом \texttt{handle}, поэтому его пишут
+лямбда-выражением или ссылкой на метод (глава~\ref{ch:06}). Помимо «основного
+действия» \texttt{setOnAction} есть и низкоуровневые обработчики:
+\texttt{setOnMouseClicked} даёт координаты и число щелчков, а
+\texttt{setOnKeyPressed}~--- код клавиши и состояние модификаторов.
+
+Когда пользователь щёлкает по кнопке внутри панели внутри окна, событие не
+появляется «прямо на кнопке». Оно проходит путь по дереву графа сцены, и
+проходит его дважды (рис.~\ref{fig:09-5}). Аналогия: клиент подал жалобу на
+конкретного сотрудника. Сначала бумага спускается сверху вниз~--- от директора
+через начальника отдела к сотруднику; это \term{фаза захвата}
+(\eng{capturing}). Затем, если вопрос не решён на месте, поднимается обратно;
+это \term{фаза всплытия} (\eng{bubbling}). Любой на этом пути может написать
+«вопрос закрыт» и остановить движение бумаги~--- это и есть \texttt{consume()}.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\small,
+  nd/.style={draw,rounded corners=2pt,align=center,text width=34mm,
+    minimum height=11mm,inner sep=3pt}]
+\node[nd] (sc) {\texttt{Scene}};
+\node[nd,below=20mm of sc] (vb) {\texttt{VBox}};
+\node[nd,below=20mm of vb] (bt) {\texttt{Button}\\[1pt]\scriptsize цель события};
+\draw[-Latex] ([xshift=-10mm]sc.south) -- ([xshift=-10mm]vb.north)
+  node[midway,left,font=\scriptsize,align=right] {захват:\\фильтры};
+\draw[-Latex] ([xshift=-10mm]vb.south) -- ([xshift=-10mm]bt.north)
+  node[midway,left,font=\scriptsize,align=right] {захват:\\фильтры};
+\draw[-Latex] ([xshift=10mm]bt.north) -- ([xshift=10mm]vb.south)
+  node[midway,right,font=\scriptsize,align=left] {всплытие:\\обработчики};
+\draw[-Latex] ([xshift=10mm]vb.north) -- ([xshift=10mm]sc.south)
+  node[midway,right,font=\scriptsize,align=left] {всплытие:\\обработчики};
+\end{tikzpicture}
+\caption{Две фазы распространения события по дереву узлов}\label{fig:09-5}
+\end{figure}
+
+Фильтры, добавленные методом \texttt{addEventFilter}, срабатывают в фазе
+захвата~--- сверху вниз; обработчики (\texttt{addEventHandler} и все методы вида
+\texttt{setOnXxx})~--- в фазе всплытия, снизу вверх. Поэтому если фильтр стоит
+на контейнере, обработчик~--- на кнопке, а ещё один~--- снова на контейнере,
+порядок будет такой: фильтр контейнера, обработчик кнопки, обработчик
+контейнера. Вызов \texttt{event.consume()} в фильтре лишает кнопку события
+вовсе: так централизованно блокируют ввод на время загрузки данных. И ещё одно
+отличие: \texttt{setOnAction} у узла один, новый вызов затирает предыдущий, а
+\texttt{addEventHandler} можно вызывать сколько угодно раз.
+
+\subsection{Свойства и привязки}
+
+Обычное поле \texttt{String name} умеет только хранить значение.
+\term{Свойство} (\eng{property}) умеет хранить значение и сообщать всем
+заинтересованным, что оно изменилось. Аналогия: обычное поле~--- листок с
+записанным курсом валюты; свойство~--- табло в обменнике: как только курс
+поменялся, все, кто на него смотрит, узнают об этом мгновенно.
+
+Типы свойств повторяют базовые типы данных: \texttt{StringProperty},
+\texttt{IntegerProperty}, \texttt{DoubleProperty}, \texttt{BooleanProperty} и
+\texttt{ObjectProperty<T>}; у каждого есть готовая реализация с приставкой
+\texttt{Simple}. Настоящая сила свойств~--- в
+привязках: метод \texttt{bind()} создаёт одностороннюю связь, при которой
+значение приёмника всегда повторяет значение источника, а сам приёмник
+становится доступен только для чтения. Что можно выразить одними привязками,
+показано в листинге~\ref{lst:09-10}: ни одного обработчика событий здесь нет.
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Метка всегда показывает то же, что набрано в поле
+label.textProperty().bind(field.textProperty());
+
+// Привязка к вычисляемому выражению
+counter.textProperty().bind(Bindings.concat(
+        "Введено символов: ", field.textProperty().length()));
+
+// Кнопка неактивна, пока поле пустое
+submit.disableProperty().bind(field.textProperty().isEmpty());
+
+// Аналог тернарного оператора в мире привязок
+status.textProperty().bind(
+        Bindings.when(field.textProperty().isEmpty())
+                .then("Заполните поле")
+                .otherwise("Готово к отправке"));
+\end{minted}
+\caption{Односторонние привязки}
+\label{lst:09-10}
+\end{listing}
+
+\begin{oshibka}
+\textbf{Частая ошибка: запись в привязанное свойство.} После вызова
+\texttt{label.textProperty().bind(...)} обращение \texttt{label.setText(...)} не
+поменяет текст, а выбросит \texttt{RuntimeException}: связанное значение
+изменять нельзя. Чтобы снова управлять текстом вручную, связь надо разорвать
+вызовом \texttt{unbind()}.
+\end{oshibka}
+
+Метод \texttt{bindBidirectional()} связывает два свойства как сообщающиеся
+сосуды: изменили одно~--- изменилось второе, и наоборот; оба остаются доступны
+для записи. Классический сценарий~--- поле формы, связанное с полем модели.
+Плата за удобство~--- совпадение типов: односторонняя связь типы допускает
+разные (через выражения), двусторонняя требует одинаковых.
+
+\texttt{ObservableList<T>}~--- список, который сообщает о добавлении и удалении
+элементов; на нём построены таблица, список и выпадающий список. Связали список
+с таблицей один раз~--- и дальше работаете со списком как с обычной коллекцией,
+а интерфейс обновляется сам. Это работает как табло вылетов в аэропорту:
+диспетчер меняет расписание в одном месте, и все экраны обновляются сами~---
+никто не бегает по залу с тряпкой и маркером. Создаются такие списки фабрикой
+\texttt{FXCollections.observableArrayList(...)}.
+
+Две производные коллекции превращают наблюдаемый список в основу живого поиска:
+\texttt{FilteredList} показывает только подходящие элементы, а
+\texttt{SortedList} даёт сортированное представление. Обе не копируют данные, а
+служат «окном» в исходный список: изменился источник~--- тут же меняется и то,
+что видно через окно. Вместе они дают поиск по мере набора текста плюс
+сортировку по щелчку на заголовке столбца (листинг~\ref{lst:09-11}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Окно в исходный список; данные не копируются
+FilteredList<Student> filtered =
+        new FilteredList<>(service.getStudents(), student -> true);
+
+searchField.textProperty().addListener((obs, was, now) -> {
+    String query = now == null ? "" : now.trim().toLowerCase();
+    filtered.setPredicate(student -> query.isEmpty()
+            || student.getFullName().toLowerCase().contains(query)
+            || student.getGroup().toLowerCase().contains(query));
+});
+
+// Сортировка по щелчку на заголовке столбца
+SortedList<Student> sorted = new SortedList<>(filtered);
+sorted.comparatorProperty().bind(table.comparatorProperty());
+table.setItems(sorted);
+\end{minted}
+\caption{Живой поиск и сортировка в таблице}
+\label{lst:09-11}
+\end{listing}
+
+Последняя привязка обязательна: без неё щелчок по заголовку переключает
+компаратор самой таблицы, а \texttt{SortedList} о нём ничего не знает и
+продолжает отдавать элементы в прежнем порядке~--- сортировка на экране просто
+не работает.
+
+\section{Шаблон MVC: модель и сервис}
+
+\term{MVC} (\eng{Model-View-Controller})~--- архитектурный шаблон, разделяющий
+приложение на три части с чётко разными обязанностями. Аналогия~--- ресторан.
+Кухня знает, из чего готовятся блюда, и понятия не имеет, как выглядит зал: это
+\term{модель}. Зал~--- столы, скатерти, меню~--- это \term{представление}, он
+ничего не готовит. Официант ходит между залом и кухней: принял заказ, передал на
+кухню, принёс готовое блюдо~--- это \term{контроллер}. Поменяли интерьер зала~---
+кухню переделывать не нужно; сменили рецепт~--- официант работает по-прежнему.
+Как эти роли выглядят в приложении JavaFX, показывает табл.~\ref{tab:09-5}.
+
+\begin{table}[htbp]
+\caption{Роли шаблона MVC в приложении JavaFX}
+\label{tab:09-5}
+\centering
+\begin{tabular}{L{3.3cm}L{4.0cm}L{3.9cm}L{3.6cm}}
+\toprule
+Роль & Что это в JavaFX & Обязанности & Чего не должна знать \\
+\midrule
+Модель & классы со свойствами, наблюдаемые списки, сервисы & данные, проверки, вычисления, работа с базой & ничего о кнопках, полях и разметке \\
+Представление & файл FXML и таблица стилей & как выглядит окно и где что стоит & ничего о бизнес-правилах \\
+Контроллер & класс с полями \texttt{@FXML} и обработчиками & реагирует на действия, вызывает модель & как модель хранит данные \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Поток управления при нажатии кнопки показан на рис.~\ref{fig:09-6}. Самая
+красивая часть~--- последний шаг: контроллеру не нужно перерисовывать таблицу
+вручную, он изменил модель, а привязка данных сделала остальное.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\small,node distance=5mm,
+  st/.style={draw,rounded corners=2pt,align=center,text width=88mm,
+    inner sep=4pt,minimum height=9mm}]
+\node[st] (a) {Пользователь нажал кнопку в окне (представление, FXML)};
+\node[st,below=of a] (b) {Разметка вызвала метод контроллера, указанный в
+  атрибуте \texttt{onAction}};
+\node[st,below=of b] (c) {Контроллер считал значения полей и проверил
+  корректность};
+\node[st,below=of c] (d) {Контроллер вызвал сервис: модель создала объект и
+  добавила его в наблюдаемый список};
+\node[st,below=of d] (e) {Список сообщил подписчикам об изменении};
+\node[st,below=of e] (f) {Таблица обновилась сама};
+\draw[flowarrow] (a) -- (b);
+\draw[flowarrow] (b) -- (c);
+\draw[flowarrow] (c) -- (d);
+\draw[flowarrow] (d) -- (e);
+\draw[flowarrow] (e) -- (f);
+\end{tikzpicture}
+\caption{Поток управления по шаблону MVC}\label{fig:09-6}
+\end{figure}
+
+Четыре практических правила удерживают архитектуру от расползания. Первое:
+модель не импортирует \texttt{javafx.scene}~--- появился
+\texttt{import javafx.scene.control.Label} в классе \texttt{Student}, и
+архитектура сломана; импорт \texttt{javafx.beans.property} допустим, потому что
+свойства относятся к модулю \texttt{javafx.base}. Второе: контроллер тонкий~---
+вычисления и проверки живут в сервисе. Третье: одно окно~--- один контроллер.
+Четвёртое: данные между окнами передаются через контроллер, полученный из
+загрузчика, а не через статические поля.
+
+Теперь соберём всё изученное в одно работающее приложение: таблица студентов,
+форма добавления, удаление выбранной записи, счётчик и таблица стилей. Начинаем
+с модели (листинг~\ref{lst:09-12}); устойчивый шаблон здесь такой: на каждое
+поле~--- три метода, получатель, установщик и метод, возвращающий само
+свойство.
+
+\begin{listing}[H]
+\begin{minted}{java}
+package com.example.manager.model;
+
+import javafx.beans.property.*;
+
+public class Student {
+
+    private final StringProperty fullName =
+            new SimpleStringProperty(this, "fullName", "");
+    private final StringProperty group =
+            new SimpleStringProperty(this, "group", "");
+    private final DoubleProperty averageGrade =
+            new SimpleDoubleProperty(this, "averageGrade", 0.0);
+
+    public Student(String fullName, String group, double grade) {
+        this.fullName.set(fullName);
+        this.group.set(group);
+        this.averageGrade.set(grade);
+    }
+
+    public String getFullName() { return fullName.get(); }
+    public void setFullName(String v) { fullName.set(v); }
+    public StringProperty fullNameProperty() { return fullName; }
+
+    public String getGroup() { return group.get(); }
+    public void setGroup(String v) { group.set(v); }
+    public StringProperty groupProperty() { return group; }
+
+    public double getAverageGrade() { return averageGrade.get(); }
+    public void setAverageGrade(double v) { averageGrade.set(v); }
+    public DoubleProperty averageGradeProperty() {
+        return averageGrade;
+    }
+
+    @Override
+    public String toString() {
+        return fullName.get() + " (" + group.get() + ")";
+    }
+}
+\end{minted}
+\caption{Модель: класс Student}
+\label{lst:09-12}
+\end{listing}
+
+Обратите внимание: поля-свойства объявлены как \texttt{final}, хотя значения
+меняются. Противоречия здесь нет~--- неизменна ссылка на объект-свойство, а
+значение внутри него меняется методом \texttt{set}; именно поэтому все
+подписчики и привязки остаются в силе на всё время жизни объекта.
+
+Модель в нашем примере~--- не только класс \texttt{Student}, но и сервис вокруг
+него (листинг~\ref{lst:09-13}). Он хранит единственный наблюдаемый список и
+предоставляет операции над ним, чтобы ни контроллер, ни разметка не работали со
+списком напрямую. Обратите внимание: здесь нет ни одного импорта
+\texttt{javafx.scene}~--- это и есть признак правильно отделённой модели.
+
+\begin{listing}[H]
+\begin{minted}{java}
+package com.example.manager.service;
+
+import com.example.manager.model.Student;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+public class StudentService {
+
+    private final ObservableList<Student> students =
+            FXCollections.observableArrayList();
+
+    public StudentService() {
+        students.addAll(
+                new Student("Петров Иван", "ПИ24-1", 4.6),
+                new Student("Смирнова Анна", "ПИ24-1", 4.9),
+                new Student("Кузнецов Дмитрий", "ТРПО24-1", 3.8));
+    }
+
+    /** Список для привязки к таблице. */
+    public ObservableList<Student> getStudents() {
+        return students;
+    }
+
+    public void add(Student student) { students.add(student); }
+
+    public void remove(Student student) { students.remove(student); }
+
+    public static boolean isValidGrade(double grade) {
+        return grade >= 2.0 && grade <= 5.0;
+    }
+}
+\end{minted}
+\caption{Модель: класс StudentService}
+\label{lst:09-13}
+\end{listing}
+
+\section{FXML, контроллер и оформление}
+
+Всё, что мы писали до сих пор, строило интерфейс кодом. Для окна из пяти
+элементов это нормально; для окна из пятидесяти метод \texttt{start()}
+превращается в километровую простыню, в которой невозможно найти нужную кнопку.
+Аналогия: прораб может объяснять бригаде каждый кирпич устно, но проще один раз
+начертить план~--- тогда чертёж отдельно (его правит архитектор), а работа
+отдельно (её делает бригада).
+
+\term{FXML}~--- XML-формат описания графа сцены. Он даёт разделение
+ответственности, читаемость, возможность рисовать интерфейс мышью и правку
+разметки без перекомпиляции. Разметка нашего окна приведена в
+листинге~\ref{lst:09-14}: сравните её с деревом на рис.~\ref{fig:09-3}~---
+вложенность элементов XML буквально повторяет вложенность узлов. Строки формы
+однотипны, поэтому показана одна из трёх: поля «Группа» и «Средний балл»
+устроены точно так же и отличаются только именем и номером строки.
+
+\begin{listing}[H]
+\begin{minted}{xml}
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+    xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="com.example.manager.controller.StudentController"
+    stylesheets="@styles.css" prefWidth="780" prefHeight="540">
+
+  <top>
+    <Label text="Менеджер студентов" styleClass="title-label"/>
+  </top>
+
+  <center>
+    <TableView fx:id="studentTable">
+      <columns>
+        <TableColumn fx:id="fullNameColumn" text="ФИО" prefWidth="330"/>
+        <TableColumn fx:id="groupColumn" text="Группа" prefWidth="150"/>
+        <TableColumn fx:id="gradeColumn" text="Балл" prefWidth="150"/>
+      </columns>
+    </TableView>
+  </center>
+
+  <bottom>
+    <VBox spacing="12">
+      <padding>
+        <Insets top="14" right="18" bottom="18" left="18"/>
+      </padding>
+
+      <GridPane hgap="10" vgap="10">
+        <!-- Статические свойства панели: GridPane.rowIndex -->
+        <Label text="ФИО:" styleClass="field-label"
+               GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="fullNameField" prefColumnCount="24"
+               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+      </GridPane>
+
+      <HBox spacing="10">
+        <!-- onAction ссылается на метод контроллера; # обязателен -->
+        <Button fx:id="addButton" text="Добавить"
+                onAction="#handleAdd" styleClass="primary-button"/>
+        <Button fx:id="deleteButton" text="Удалить выбранного"
+                onAction="#handleDelete" styleClass="danger-button"/>
+        <Button text="Очистить форму" onAction="#handleClear"/>
+      </HBox>
+
+      <Label fx:id="statusLabel" styleClass="status-label"/>
+    </VBox>
+  </bottom>
+</BorderPane>
+\end{minted}
+\caption{Представление: файл students-view.fxml}
+\label{lst:09-14}
+\end{listing}
+
+Каждой конструкции разметки механически соответствует строка кода на Java:
+\texttt{<VBox spacing="12">} равносильно \texttt{vbox.setSpacing(12)}, атрибут
+\texttt{GridPane.rowIndex="1"}~--- вызову
+\texttt{GridPane.setRowIndex(node, 1)}. Три атрибута пространства имён
+\texttt{fx} нужно знать наизусть. \texttt{fx:controller}~--- полное имя
+класса-контроллера, указывается только на корневом элементе.
+\texttt{fx:id}~--- идентификатор узла: по нему загрузчик находит одноимённое
+поле контроллера и подставляет туда созданный объект.
+\texttt{fx:include}~--- вставка другого файла разметки.
+
+\subsection{Контроллер и загрузчик}
+
+Класс-контроллер связывает разметку с поведением: он объявляет поля с аннотацией
+\texttt{@FXML}, имена которых совпадают с \texttt{fx:id}, и методы, на которые
+ссылается \texttt{onAction}. Начнём с настройки (листинг~\ref{lst:09-15}): в ней
+собрано почти всё, о чём шла речь в главе,~--- фабрики значений, связь таблицы
+со списком и привязки, благодаря которым кнопки и строка состояния управляют
+собой сами.
+
+\begin{listing}[H]
+\begin{minted}{java}
+package com.example.manager.controller;
+
+// импорты: Student, StudentService, Bindings, FXML,
+// javafx.scene.control.*, PropertyValueFactory
+
+public class StudentController {
+
+    // Имена полей совпадают с fx:id в разметке
+    @FXML private TableView<Student> studentTable;
+    @FXML private TableColumn<Student, String> fullNameColumn;
+    @FXML private TableColumn<Student, String> groupColumn;
+    @FXML private TableColumn<Student, Double> gradeColumn;
+    @FXML private TextField fullNameField, groupField, gradeField;
+    @FXML private Button addButton, deleteButton;
+    @FXML private Label statusLabel;
+
+    private final StudentService service = new StudentService();
+
+    /** Вызывается ПОСЛЕ заполнения всех полей @FXML. */
+    @FXML
+    private void initialize() {
+        // 1. Откуда столбцы берут значения
+        fullNameColumn.setCellValueFactory(
+                new PropertyValueFactory<>("fullName"));
+        groupColumn.setCellValueFactory(
+                new PropertyValueFactory<>("group"));
+        gradeColumn.setCellValueFactory(
+                d -> d.getValue().averageGradeProperty().asObject());
+
+        // 2. Связь таблицы со списком модели
+        studentTable.setItems(service.getStudents());
+        studentTable.setPlaceholder(new Label("Список пуст"));
+
+        // 3. Кнопки включаются и выключаются сами
+        deleteButton.disableProperty().bind(studentTable
+                .getSelectionModel().selectedItemProperty().isNull());
+        addButton.disableProperty().bind(
+                fullNameField.textProperty().isEmpty()
+                        .or(groupField.textProperty().isEmpty())
+                        .or(gradeField.textProperty().isEmpty()));
+
+        // 4. Строка состояния показывает количество записей
+        statusLabel.textProperty().bind(Bindings.concat(
+                "Студентов в списке: ",
+                Bindings.size(service.getStudents())));
+    }
+}
+\end{minted}
+\caption{Контроллер: настройка в методе initialize}
+\label{lst:09-15}
+\end{listing}
+
+Порядок работы загрузчика \texttt{FXMLLoader} полезно знать целиком: он читает
+XML и создаёт объекты узлов; создаёт экземпляр контроллера из
+\texttt{fx:controller} (тому нужен конструктор без аргументов); записывает в
+поля с \texttt{@FXML} узлы с соответствующими \texttt{fx:id}; привязывает
+обработчики; вызывает \texttt{initialize()}, если он есть; возвращает корневой
+узел.
+
+\begin{oshibka}
+\textbf{Частая ошибка: настройка в конструкторе контроллера.} В конструкторе
+поля \texttt{@FXML} ещё равны \texttt{null}: загрузчик заполняет их позже.
+Обращение к ним оттуда даёт \texttt{NullPointerException}. Вся настройка
+интерфейса идёт в методе \texttt{initialize()}.
+\end{oshibka}
+
+Осталось написать обработчики кнопок (листинг~\ref{lst:09-16}). Разбор оценки
+вынесен в отдельный метод, чтобы не дублировать его при добавлении и изменении
+записи, а об ошибках пользователю сообщает диалог, а не консоль. Не показаны два
+коротких метода: \texttt{handleClear} снимает выделение и очищает поля формы, а
+\texttt{showError} показывает \texttt{Alert} типа \texttt{ERROR}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+    @FXML
+    private void handleAdd() {
+        Double grade = parseGrade();
+        if (grade == null) {
+            return;
+        }
+        service.add(new Student(fullNameField.getText().trim(),
+                groupField.getText().trim(), grade));
+        handleClear();
+    }
+
+    @FXML
+    private void handleDelete() {
+        Student selected =
+                studentTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;   // кнопка и так отключена, но защита не мешает
+        }
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setHeaderText(null);
+        confirm.setContentText("Удалить запись: " + selected + "?");
+        confirm.showAndWait()
+                .filter(button -> button == ButtonType.OK)
+                .ifPresent(button -> service.remove(selected));
+    }
+
+    /** Разбор поля оценки; null, если значение некорректно. */
+    private Double parseGrade() {
+        double grade;
+        try {
+            grade = Double.parseDouble(
+                    gradeField.getText().trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            showError("Балл должен быть числом, например 4.5");
+            return null;
+        }
+        if (!StudentService.isValidGrade(grade)) {
+            showError("Балл должен быть от 2.0 до 5.0");
+            return null;
+        }
+        return grade;
+    }
+\end{minted}
+\caption{Контроллер: обработчики кнопок}
+\label{lst:09-16}
+\end{listing}
+
+Загружают разметку двумя способами. Короткий~--- это статический вызов
+\texttt{FXMLLoader.load(url)}, но он возвращает только корневой узел, и
+контроллер у него не получить. Поэтому по умолчанию создают объект загрузчика,
+как в точке входа (листинг~\ref{lst:09-17}), а контроллер добирают методом
+\texttt{getController()}. Обёртка \texttt{Objects.requireNonNull} здесь не
+формальность: без неё вместо внятного сообщения о пропавшем файле вы получите
+загадочное \texttt{Location is required}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+package com.example.manager;
+
+// импорты: Application, FXMLLoader, Parent, Scene, Stage,
+// java.net.URL, java.util.Objects
+
+public class MainApp extends Application {
+
+    @Override
+    public void start(Stage stage) throws Exception {
+        // Ресурс ищется рядом с этим классом в resources
+        URL view = MainApp.class.getResource("students-view.fxml");
+        Objects.requireNonNull(view, "Не найден students-view.fxml");
+
+        Parent root = new FXMLLoader(view).load();
+
+        stage.setTitle("Менеджер студентов");
+        stage.setScene(new Scene(root, 780, 540));
+        stage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
+\end{minted}
+\caption{Точка входа: класс MainApp}
+\label{lst:09-17}
+\end{listing}
+
+\subsection{Scene Builder и оформление через CSS}
+
+\term{JavaFX Scene Builder}~--- бесплатный визуальный редактор интерфейсов от
+компании Gluon: вы перетаскиваете компоненты мышью, а он сохраняет результат в
+файл FXML, и наоборот~--- любая корректная разметка открывается в нём как
+готовое окно. Ключевая мысль: Java-кода он не генерирует и средой разработки не
+является, он редактирует ровно один тип файлов; \texttt{fx:id} и имя
+метода-обработчика задают в его вкладке \eng{Code}. Помогает редактор, когда
+интерфейс большой и статичный; мешает~--- когда набор элементов формируется
+динамически и когда файл правят несколько человек, потому что он переставляет
+атрибуты и слияние версий превращается в мучение. Отсюда компромисс, принятый в
+индустрии: статический каркас окна~--- в FXML, динамические части~--- кодом.
+
+Задавать цвет каждой кнопке вызовом \texttt{setStyle()}~--- то же самое, что
+пришивать пуговицы к каждой рубашке отдельно, вместо того чтобы один раз описать
+фасон. Таблица стилей даёт единое место, где хранится весь внешний вид: поменяли
+одну строку~--- изменилось всё приложение. По умолчанию JavaFX использует
+встроенную тему \eng{Modena}; ваша таблица стилей её не заменяет, а
+накладывается сверху.
+
+Способов применить стиль три: инлайн-стиль \texttt{setStyle("...")}~--- быстро,
+но не переиспользуется; класс стиля плюс внешняя таблица
+(\texttt{getStyleClass().add("primary-button")})~--- основной рабочий способ;
+идентификатор \texttt{setId("submitButton")}~--- для уникального элемента. Сама
+таблица подключается к сцене через список \texttt{getStylesheets()}, в который
+добавляют адрес файла; вызов \texttt{toExternalForm()} обязателен, потому что
+список хранит строки-адреса, а \texttt{getResource()} возвращает объект
+\texttt{URL}. Можно подключить таблицу и из разметки атрибутом
+\texttt{stylesheets="@styles.css"}, где знак собачки означает «путь относительно
+этого файла»,~--- так сделано в листинге~\ref{lst:09-14}.
+
+Таблица стилей нашего приложения приведена в листинге~\ref{lst:09-18}. Разберите
+её по типам селекторов: точка~--- класс стиля, знак номера~--- идентификатор, а
+имя после двоеточия~--- псевдокласс состояния.
+
+\begin{listing}[H]
+\begin{minted}{text}
+/* Корневой узел сцены всегда имеет класс .root */
+.root {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f4f6f8;
+}
+
+.title-label  { -fx-font-size: 22px; -fx-font-weight: bold; }
+.field-label  { -fx-text-fill: #55606d; }
+.status-label { -fx-text-fill: #6b7684; -fx-font-size: 12px; }
+
+.text-field { -fx-border-color: #d3dae3; -fx-padding: 6 10 6 10; }
+.text-field:focused { -fx-border-color: #2d7ff9; }
+
+.button { -fx-background-radius: 5; -fx-cursor: hand; }
+
+.primary-button {
+    -fx-background-color: #2d7ff9;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+.primary-button:hover { -fx-background-color: derive(#2d7ff9, -12%); }
+.primary-button:disabled { -fx-opacity: 0.45; }
+
+.danger-button { -fx-background-color: #e5484d; -fx-text-fill: white; }
+
+.table-view .column-header { -fx-background-color: #eaeef3; }
+\end{minted}
+\caption{Таблица стилей styles.css}
+\label{lst:09-18}
+\end{listing}
+
+Имя селектора по типу компонента выводится из имени класса: \texttt{Button}~---
+\texttt{.button}, \texttt{TextField}~--- \texttt{.text-field}. Основные
+псевдоклассы: \texttt{:hover}, \texttt{:pressed}, \texttt{:focused},
+\texttt{:disabled}, \texttt{:selected}, а также \texttt{:odd} и \texttt{:even}
+для строк списков. Синтаксис почти совпадает с веб-вариантом CSS, но набор
+свойств свой, и все они начинаются с приставки \texttt{-fx-}. Ключевые
+расхождения собраны в табл.~\ref{tab:09-6}; особое внимание обратите на две
+последние строки~--- именно их ищут в первую очередь и не находят.
+
+\begin{table}[htbp]
+\caption{Отличия CSS в JavaFX от CSS в вебе}
+\label{tab:09-6}
+\centering
+\begin{tabular}{L{4.3cm}L{5.5cm}L{4.9cm}}
+\toprule
+В вебе & В JavaFX & Комментарий \\
+\midrule
+\texttt{color} & \texttt{-fx-text-fill} & цвет текста \\
+\texttt{background-color} & \texttt{-fx-background-color} & допускает несколько слоёв \\
+\texttt{border-radius} & \texttt{-fx-background-radius} и \texttt{-fx-border-radius} & фон и рамка скругляются отдельно \\
+\texttt{box-shadow} & \texttt{-fx-effect: dropshadow(...)} & тень~--- это эффект \\
+\texttt{margin} & отсутствует & внешний отступ задаёт панель \\
+\texttt{display}, \texttt{flex} & отсутствуют & раскладка~--- задача панелей \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Запомните и приоритет: инлайн-стиль перебивает вашу таблицу стилей, а та~---
+встроенную тему, поэтому не смешивайте два подхода для одного свойства.
+Запускается готовое приложение командой \texttt{mvn clean javafx:run}, а из
+среды разработки~--- классом \texttt{Launcher} из листинга~\ref{lst:09-2}.
+Развивать пример можно в любую сторону: добавить поиск через
+\texttt{FilteredList} или подключить базу данных из главы~\ref{ch:06}. Модель
+при этом почти не изменится~--- в этом и состоит выгода разделения слоёв.
+
+\praktikum{}
+
+Понадобятся JDK~21 или новее, Maven~3.8 или новее и любая среда разработки.
+Задания выполняются в одном проекте и строго по порядку: каждое следующее
+опирается на файлы, созданные в предыдущем.
+
+\subsection*{Задание 1. Проект, первое окно и жизненный цикл}
+
+Создайте каталог \texttt{student-manager} со структурой из рис.~\ref{fig:09-1};
+сборочный файл возьмите из листинга~\ref{lst:09-1}, первое окно~--- из
+листинга~\ref{lst:09-3}. Запустите проект командой
+\texttt{mvn clean compile javafx:run}.
+
+Добавьте в \texttt{HelloApp} методы \texttt{init()} и \texttt{stop()},
+печатающие имя текущего потока (\texttt{Thread.currentThread().getName()}), и
+такую же печать в начало \texttt{start()}. Добавьте кнопку «Выйти» с
+обработчиком \texttt{Platform.exit()}. Закройте окно кнопкой и системным
+крестиком, сравните вывод консоли, затем замените \texttt{Platform.exit()} на
+\texttt{System.exit(0)} и проверьте, вызывается ли \texttt{stop()}. Наконец,
+запустите \texttt{HelloApp} прямо из среды разработки: скорее всего вы получите
+сообщение о недостающих компонентах JavaFX; создайте класс \texttt{Launcher} по
+листингу~\ref{lst:09-2} и запустите его.
+
+Ответьте письменно: в каких потоках выполнились \texttt{init()} и
+\texttt{start()}; вызывается ли \texttt{stop()} при каждом из трёх способов
+завершения; почему \texttt{Launcher} решает проблему, запуская тот же класс.
+
+\subsection*{Задание 2. Элементы управления, обработчики и привязки}
+
+Создайте класс \texttt{GreetingApp}: подпись, поле ввода и кнопки
+«Поздороваться» (\texttt{setDefaultButton(true)}) и «Очистить»
+(\texttt{setCancelButton(true)}). Обработчик первой кнопки читает фамилию из
+поля и выводит приветствие в метку результата, а если поле пустое~--- сообщает
+об этом; тот же обработчик повесьте на \texttt{setOnAction} самого поля.
+Разложите элементы по \texttt{HBox} внутри \texttt{VBox} по образцу
+листинга~\ref{lst:09-5}.
+
+Вторая часть~--- то же самое без единого обработчика. Добавьте три метки и
+настройте их привязками по образцу листинга~\ref{lst:09-10}: первая повторяет
+содержимое поля, вторая показывает число введённых символов, третья сообщает
+«Заполните поле» или «Можно здороваться». Кнопку свяжите с пустотой поля через
+\texttt{disableProperty()}. Затем попробуйте задать текст первой метки вызовом
+\texttt{setText}, запишите текст исключения и уберите эту строку.
+
+Ответьте письменно: чем \texttt{setDefaultButton(true)} отличается от
+\texttt{setOnAction}; какое исключение дала запись в привязанное свойство и
+почему.
+
+\subsection*{Задание 3. Компоновка, модель и таблица}
+
+Создайте класс \texttt{FormApp} с формой регистрации: сетка «подпись~--- поле»
+из листинга~\ref{lst:09-6} с полями «Логин», «Пароль» (\texttt{PasswordField}) и
+«Группа» (\texttt{ComboBox}), под ней~--- строка кнопок, ниже~--- строка
+состояния; всё это в \texttt{VBox}, а его~--- в центр \texttt{BorderPane} с
+заголовком сверху. Растяните окно мышью: поля должны растягиваться, подписи~---
+оставаться на месте. Проверьте два изменения: включите
+\texttt{setGridLinesVisible(true)}; удалите обе строки с
+\texttt{ColumnConstraints} и снова растяните окно.
+
+Вторая часть~--- данные. Наберите классы \texttt{Student} и
+\texttt{StudentService} из листингов~\ref{lst:09-12} и~\ref{lst:09-13}, затем
+класс \texttt{TableApp} с таблицей по образцу листингов~\ref{lst:09-8}
+и~\ref{lst:09-9}. Добавьте кнопку, добавляющую студента в сервис, и кнопку
+удаления выбранной строки, связав вторую привязкой с пустым выделением; строку
+состояния сделайте привязкой к \texttt{Bindings.size(...)}. Затем внесите
+опечатку в имя свойства внутри \texttt{PropertyValueFactory}, пересоберите
+проект, посмотрите на результат и верните имя обратно.
+
+Ответьте письменно: чем внутренний отступ отличается от внешнего; зачем нужен
+\texttt{Priority.ALWAYS}; скомпилировался ли проект с опечаткой и почему
+компилятор промолчал; кто перерисовал таблицу после добавления студента.
+
+\subsection*{Задание 4. Разметка FXML, контроллер и таблица стилей}
+
+Вынесите интерфейс в разметку. Создайте файл \texttt{students-view.fxml} по
+листингу~\ref{lst:09-14}, дописав третью строку формы с полем
+\texttt{gradeField}; контроллер \texttt{StudentController} по
+листингам~\ref{lst:09-15} и~\ref{lst:09-16}, добавив метод
+\texttt{handleClear}; точку входа \texttt{MainApp} по листингу~\ref{lst:09-17} и
+таблицу стилей \texttt{styles.css} по листингу~\ref{lst:09-18}.
+
+Проведите три эксперимента. Первый: переименуйте в разметке
+\texttt{fx:id="groupField"} в \texttt{fx:id="groupFld"}, оставив поле
+контроллера прежним, и запишите текст исключения. Второй: перенесите настройку
+столбцов из \texttt{initialize()} в конструктор контроллера и объясните
+результат. Третий: добавьте в конец \texttt{initialize()} вызов
+\texttt{addButton.setStyle}, задающий зелёный фон, и посмотрите, какой цвет
+победил. Заодно проверьте псевдоклассы: наведите курсор на синюю кнопку,
+щёлкните по полю ввода, очистите форму, выделите строку таблицы.
+
+Ответьте письменно: какое исключение дало несовпадение \texttt{fx:id} и имени
+поля; почему настройка не работает из конструктора; как расставить по приоритету
+инлайн-стиль, вашу таблицу стилей и встроенную тему.
+
+\subsection*{Задание 5. Итоговое приложение: изменение, поиск, подтверждения}
+
+Добавьте в разметку кнопку «Сохранить изменения» с обработчиком
+\texttt{handleUpdate}, а в контроллер~--- одноимённый метод: он берёт выбранного
+студента, разбирает поля формы методом \texttt{parseGrade()} и обновляет
+свойства объекта. Добавьте в \texttt{initialize()} слушателя выбранной строки,
+заполняющего форму её значениями, и привяжите доступность новой кнопки к наличию
+выделения.
+
+Добавьте живой поиск: поле \texttt{searchField} в верхнюю зону разметки и блок
+из листинга~\ref{lst:09-11} вместо вызова \texttt{setItems}; строку состояния
+свяжите сразу с двумя числами~--- сколько студентов всего и сколько показано.
+Добавьте в \texttt{MainApp} обработчик \texttt{stage.setOnCloseRequest}, который
+показывает диалог и вызывает \texttt{event.consume()}, если пользователь
+передумал. Проверьте: ввод слова вместо числа даёт диалог с ошибкой, а не
+падение; оценка 7,5 отвергается проверкой; поиск фильтрует таблицу по мере
+набора.
+
+Ответьте письменно: почему таблица обновилась после изменения свойств студента,
+хотя вы не вызывали ни \texttt{refresh()}, ни \texttt{setItems()}; почему при
+удалении отфильтрованной строки удаляется правильный студент; что делает
+\texttt{event.consume()} в обработчике закрытия окна; есть ли в классах
+\texttt{Student} и \texttt{StudentService} импорт \texttt{javafx.scene} и почему
+его отсутствие~--- хороший признак.
+
+\subsection*{Результаты занятия}
+
+По итогам занятия у вас должны быть готовы: проект \texttt{student-manager} с
+зависимостями JavaFX и классом \texttt{Launcher}; приложения \texttt{HelloApp},
+\texttt{GreetingApp}, \texttt{FormApp} и \texttt{TableApp}; модель
+\texttt{Student} и сервис \texttt{StudentService}; разметка
+\texttt{students-view.fxml}, контроллер \texttt{StudentController} и таблица
+стилей \texttt{styles.css}; итоговое приложение с добавлением, изменением,
+удалением с подтверждением и поиском; снимки экрана итогового окна; письменные
+ответы на вопросы заданий.
+
+\kontrolvoprosy
+
+\begin{enumerate}
+\item Почему начиная с JDK~11 JavaFX не входит в состав JDK и какие два модуля
+      достаточно объявить для большинства приложений?
+\item Что означает ошибка о недостающих компонентах среды выполнения JavaFX и
+      почему её обходит класс-запускалка?
+\item Опишите жизненный цикл приложения. В каких потоках выполняются
+      \texttt{init()} и \texttt{start()}, почему в \texttt{init()} нельзя
+      создавать окно и чем \texttt{Platform.exit()} отличается от
+      \texttt{System.exit(0)}?
+\item Что такое JavaFX Application Thread и почему нельзя менять интерфейс из
+      другого потока? Как вернуть в интерфейс результат фоновой работы?
+\item Чем \texttt{Stage} отличается от \texttt{Scene}? Может ли одна и та же
+      сцена стоять в двух окнах? Чем \texttt{show()} отличается от
+      \texttt{showAndWait()}?
+\item Что такое граф сцены? Чем различаются \texttt{Node}, \texttt{Parent},
+      \texttt{Region} и \texttt{Control}?
+\item Что произойдёт, если один и тот же узел добавить сначала в одну панель, а
+      затем в другую? Как в JavaFX определяется порядок наложения узлов?
+\item В чём разница между внутренним и внешним отступом? Какую панель вы
+      выберете для формы, а какую~--- для каркаса окна?
+\item Из каких трёх частей состоит работающий \texttt{TableView}? За что
+      отвечает фабрика значений, а за что фабрика ячеек? Какую ошибку не
+      поймает компилятор при использовании \texttt{PropertyValueFactory}?
+\item В каком порядке срабатывают фильтры и обработчики события и что делает
+      \texttt{consume()}? Чем \texttt{setOnAction} отличается от
+      \texttt{addEventHandler}?
+\item Чем \texttt{bind()} отличается от \texttt{bindBidirectional()}? Что
+      произойдёт при попытке задать текст метки с привязанным свойством?
+\item Что делают \texttt{fx:controller}, \texttt{fx:id} и \texttt{onAction} в
+      разметке? Почему настройку компонентов пишут в \texttt{initialize()}, а не
+      в конструкторе контроллера?
+\item Назовите три отличия CSS в JavaFX от CSS в вебе. В каком порядке
+      применяются инлайн-стиль, ваша таблица стилей и встроенная тема?
+\item Как распределяются обязанности между моделью, представлением и
+      контроллером? Какой импорт в классе модели сигнализирует о нарушении
+      архитектуры?
+\end{enumerate}
+
+\testzadaniya
+
+\begin{enumerate}
+
+\item Начиная с какой версии JDK библиотека JavaFX не поставляется вместе с JDK?
+  \begin{enumerate}
+    \item[а)] JDK~8
+    \item[б)] JDK~9
+    \item[в)] JDK~11
+    \item[г)] JDK~17
+  \end{enumerate}
+
+\item Какие два модуля достаточно объявить для приложения с обычными элементами
+      управления и разметкой FXML?
+  \begin{enumerate}
+    \item[а)] \texttt{javafx-base} и \texttt{javafx-media}
+    \item[б)] \texttt{javafx-graphics} и \texttt{javafx-web}
+    \item[в)] все семь модулей, иначе приложение не запустится
+    \item[г)] \texttt{javafx-controls} и \texttt{javafx-fxml}
+  \end{enumerate}
+
+\item В каком порядке выполняются шаги жизненного цикла приложения?
+  \begin{enumerate}
+    \item[а)] \texttt{init} $\to$ \texttt{launch} $\to$ \texttt{start} $\to$ \texttt{stop}
+    \item[б)] \texttt{launch} $\to$ \texttt{start} $\to$ \texttt{init} $\to$ \texttt{stop}
+    \item[в)] \texttt{start} $\to$ \texttt{init} $\to$ \texttt{stop} $\to$ \texttt{launch}
+    \item[г)] \texttt{launch} $\to$ \texttt{init} $\to$ \texttt{start} $\to$ \texttt{stop}
+  \end{enumerate}
+
+\item Чем \texttt{System.exit(0)} отличается от \texttt{Platform.exit()}?
+  \begin{enumerate}
+    \item[а)] ничем: оба корректно завершают среду выполнения
+    \item[б)] \texttt{Platform.exit()} закрывает только текущее окно
+    \item[в)] \texttt{System.exit(0)} обрывает работу JVM немедленно, поэтому
+              \texttt{stop()} не выполняется
+    \item[г)] \texttt{System.exit(0)} вызывает \texttt{stop()}, а
+              \texttt{Platform.exit()}~--- нет
+  \end{enumerate}
+
+\item Фоновый поток напрямую задаёт текст метки вызовом \texttt{setText}. Что
+      произойдёт?
+  \begin{enumerate}
+    \item[а)] текст обновится: платформа сама переключится в нужный поток
+    \item[б)] будет выброшено \texttt{IllegalStateException}
+    \item[в)] ничего не произойдёт, вызов будет молча проигнорирован
+    \item[г)] приложение зависнет до завершения фонового потока
+  \end{enumerate}
+
+\item Каким должен быть корневой узел, передаваемый в конструктор
+      \texttt{Scene}?
+  \begin{enumerate}
+    \item[а)] любым наследником \texttt{Node}
+    \item[б)] обязательно объектом класса \texttt{Group}
+    \item[в)] наследником \texttt{Parent}, способным иметь потомков
+    \item[г)] обязательно объектом класса \texttt{AnchorPane}
+  \end{enumerate}
+
+\item Кнопку добавили сначала в \texttt{VBox}, затем её же в \texttt{HBox}. Что
+      окажется на экране?
+  \begin{enumerate}
+    \item[а)] кнопка появится сразу в обеих панелях
+    \item[б)] кнопка останется в \texttt{VBox}, второе добавление
+              проигнорируется
+    \item[в)] будет выброшено исключение о дублировании потомков
+    \item[г)] кнопка окажется только в \texttt{HBox}~--- из \texttt{VBox} она
+              исчезнет
+  \end{enumerate}
+
+\item Чем внутренний отступ отличается от внешнего?
+  \begin{enumerate}
+    \item[а)] внутренний задаётся в пикселях, внешний~--- в процентах
+    \item[б)] внутренний~--- расстояние от краёв панели до потомков,
+              внешний~--- место вокруг одного потомка, задаваемое статическим
+              методом панели
+    \item[в)] внутренний применяется к элементам управления, внешний~--- к
+              панелям
+    \item[г)] это синонимы: оба метода делают одно и то же
+  \end{enumerate}
+
+\item Кнопка лежит в \texttt{VBox}. На \texttt{VBox} добавлен фильтр, на кнопке
+      задан \texttt{setOnAction}, на \texttt{VBox}~--- ещё и обработчик. В каком
+      порядке они сработают?
+  \begin{enumerate}
+    \item[а)] обработчик кнопки, фильтр, обработчик \texttt{VBox}
+    \item[б)] фильтр, обработчик \texttt{VBox}, обработчик кнопки
+    \item[в)] фильтр, обработчик кнопки, обработчик \texttt{VBox}
+    \item[г)] все три сработают одновременно, порядок не определён
+  \end{enumerate}
+
+\item Текст метки привязан к тексту поля вызовом \texttt{bind}. Что произойдёт
+      при попытке задать текст метки вызовом \texttt{setText}?
+  \begin{enumerate}
+    \item[а)] метка покажет новый текст, а привязка автоматически разорвётся
+    \item[б)] метка покажет новый текст, а затем вернётся к тексту поля
+    \item[в)] вызов \texttt{setText} выбросит \texttt{RuntimeException}
+    \item[г)] код не скомпилируется
+  \end{enumerate}
+
+\item Почему таблица обновляется сама, когда в модель добавили новую запись?
+  \begin{enumerate}
+    \item[а)] потому что таблица раз в секунду перечитывает источник данных
+    \item[б)] потому что таблица связана с наблюдаемым списком, который сообщает
+              подписчикам об изменениях
+    \item[в)] потому что контроллер обязан вызывать \texttt{refresh()}
+    \item[г)] потому что \texttt{PropertyValueFactory} следит за изменениями
+              через рефлексию
+  \end{enumerate}
+
+\item Почему настройку интерфейса пишут в \texttt{initialize()}, а не в
+      конструкторе контроллера?
+  \begin{enumerate}
+    \item[а)] потому что конструктор выполняется в другом потоке
+    \item[б)] потому что в конструкторе поля \texttt{@FXML} ещё равны
+              \texttt{null}: загрузчик заполняет их позже
+    \item[в)] потому что конструктор вызывается один раз, а
+              \texttt{initialize()}~--- при каждом показе окна
+    \item[г)] потому что в конструкторе запрещено обращаться к классам модели
+  \end{enumerate}
+
+\item Какого свойства в CSS для JavaFX нет вовсе?
+  \begin{enumerate}
+    \item[а)] внешнего отступа: его задаёт панель компоновки
+    \item[б)] \texttt{-fx-padding}
+    \item[в)] \texttt{-fx-opacity}
+    \item[г)] \texttt{-fx-background-color}
+  \end{enumerate}
+
+\end{enumerate}

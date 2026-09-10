@@ -1,0 +1,10 @@
+classDiagram
+    class Writer { <<abstract>> }
+    Writer <|-- FileWriter
+    Writer <|-- StringWriter
+    Writer <|-- BufferedWriter
+    Writer <|-- PrintWriter
+
+    note for FileWriter "запись в текстовый файл"
+    note for BufferedWriter "буферизированное + newLine()"
+    note for PrintWriter "printf(), println()"

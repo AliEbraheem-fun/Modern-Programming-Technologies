@@ -1,0 +1,31 @@
+classDiagram
+    class Device {
+        <<abstract>>
+        +turnOn() void
+    }
+    class Connectable {
+        <<interface>>
+        +connect()
+    }
+    class Updatable {
+        <<interface>>
+        +updateFirmware()
+    }
+    class SmartDevice {
+        -modelName
+        -isConnected
+        +deviceCount$ int
+        +MANUFACTURER$ String
+        +turnOn()
+        +connect()
+        +updateFirmware()
+        +get/set...()
+    }
+    class FirmwareVersion {
+        <<nested static>>
+        +showVersion()
+    }
+    Device <|-- SmartDevice : extends
+    Connectable <|.. SmartDevice : implements
+    Updatable <|.. SmartDevice : implements
+    SmartDevice *-- FirmwareVersion : вложенный класс

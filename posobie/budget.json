@@ -1,0 +1,98 @@
+[
+ {
+  "chapter": 1,
+  "source_lecture": 51789,
+  "source_practice": 9787,
+  "source_total": 61576,
+  "budget_chars": 31498,
+  "keep_ratio_pct": 51
+ },
+ {
+  "chapter": 2,
+  "source_lecture": 108873,
+  "source_practice": 40152,
+  "source_total": 149025,
+  "budget_chars": 66767,
+  "keep_ratio_pct": 45
+ },
+ {
+  "chapter": 3,
+  "source_lecture": 33396,
+  "source_practice": 15155,
+  "source_total": 48551,
+  "budget_chars": 25737,
+  "keep_ratio_pct": 53
+ },
+ {
+  "chapter": 4,
+  "source_lecture": 56165,
+  "source_practice": 20177,
+  "source_total": 76342,
+  "budget_chars": 37813,
+  "keep_ratio_pct": 50
+ },
+ {
+  "chapter": 5,
+  "source_lecture": 35320,
+  "source_practice": 21068,
+  "source_total": 56388,
+  "budget_chars": 29228,
+  "keep_ratio_pct": 52
+ },
+ {
+  "chapter": 6,
+  "source_lecture": 91831,
+  "source_practice": 28815,
+  "source_total": 120646,
+  "budget_chars": 55792,
+  "keep_ratio_pct": 46
+ },
+ {
+  "chapter": 7,
+  "source_lecture": 52412,
+  "source_practice": 32839,
+  "source_total": 85251,
+  "budget_chars": 41532,
+  "keep_ratio_pct": 49
+ },
+ {
+  "chapter": 8,
+  "source_lecture": 87605,
+  "source_practice": 45606,
+  "source_total": 133211,
+  "budget_chars": 60694,
+  "keep_ratio_pct": 46
+ },
+ {
+  "chapter": 9,
+  "source_lecture": 97481,
+  "source_practice": 56993,
+  "source_total": 154474,
+  "budget_chars": 68836,
+  "keep_ratio_pct": 45
+ },
+ {
+  "chapter": 10,
+  "source_lecture": 84715,
+  "source_practice": 49664,
+  "source_total": 134379,
+  "budget_chars": 61146,
+  "keep_ratio_pct": 46
+ },
+ {
+  "chapter": 11,
+  "source_lecture": 82857,
+  "source_practice": 58428,
+  "source_total": 141285,
+  "budget_chars": 63807,
+  "keep_ratio_pct": 45
+ },
+ {
+  "chapter": 12,
+  "source_lecture": 72290,
+  "source_practice": 51800,
+  "source_total": 124090,
+  "budget_chars": 57143,
+  "keep_ratio_pct": 46
+ }
+]

@@ -1,0 +1,28 @@
+classDiagram
+    class Movable {
+        <<interface>>
+        +move()
+        +stop()
+        +info()$
+        -log()
+    }
+    note for Movable "stop() — default; info() — static; log() — private"
+    class Powered {
+        <<interface>>
+        +turnOn()
+        +battery()
+    }
+    note for Powered "battery() — default"
+    class SmartDevice {
+        <<interface>>
+        +connectToWiFi()
+    }
+    class Robot {
+        +move()
+        +turnOn()
+        +connectToWiFi()
+        +stop()
+    }
+    Movable <|-- SmartDevice : extends
+    Powered <|-- SmartDevice : extends
+    SmartDevice <|.. Robot : implements

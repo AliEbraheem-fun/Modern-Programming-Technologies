@@ -1,0 +1,6 @@
+flowchart TD
+    BA["@BeforeAll — один раз"] --> C1["конструктор класса (экземпляр 1)"]
+    C1 --> BE1["@BeforeEach"] --> T1["@Test test1"] --> AE1["@AfterEach"]
+    AE1 --> C2["конструктор класса — НОВЫЙ экземпляр"]
+    C2 --> BE2["@BeforeEach"] --> T2["@Test test2"] --> AE2["@AfterEach"]
+    AE2 --> AA["@AfterAll — один раз"]

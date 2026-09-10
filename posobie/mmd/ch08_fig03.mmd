@@ -1,0 +1,4 @@
+flowchart TD
+    NET["Интернет"] --> NGINX["Nginx :443<br/>HTTPS, статика (css, js, картинки), сжатие,<br/>балансировка, защита от простых атак"]
+    NGINX -- "HTTP :8080" --> APP["Tomcat + ваше Spring Boot приложение<br/>динамика: контроллеры, сервисы"]
+    APP -- "JDBC :5432" --> DB[("PostgreSQL")]

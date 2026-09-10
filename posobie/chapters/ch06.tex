@@ -1,0 +1,1382 @@
+\chapter{Системы сборки, базы данных и функциональный стиль}
+\label{ch:06}
+
+До сих пор программы из этой книги жили сами по себе: мы компилировали один
+файл вручную и держали данные в памяти. Реальный проект устроен иначе~--- в
+нём десятки сторонних библиотек, набор тестов и база данных, переживающая
+перезапуск приложения. Эта глава закрывает разрыв между учебным примером и
+рабочим проектом: мы поручим сборку системам Maven и Gradle, научимся
+разговаривать с базой данных на языке JDBC и на языке объектов через
+Hibernate, разберёмся с транзакциями. Завершает главу Stream~API~---
+декларативный способ обработать данные, не написав ни одного цикла; коллекции,
+на которые он опирается, разбирались в главе~\ref{ch:05}.
+
+\section{Системы автоматической сборки}
+
+\subsection{Maven: структура проекта и файл pom.xml}
+
+Кроме написания кода с проектом приходится делать многое: скачивать JAR-файлы
+библиотек и всех библиотек, от которых зависят они сами; прописывать пути к
+ним при вызове компилятора; запускать тесты; упаковывать результат в архив.
+Вручную это выполнимо ровно один раз~--- на второй день превращается в пытку.
+\term{Система сборки} (\eng{build system})~--- автоматизированная кухня, где
+ингредиенты доставляются сами. Главная идея самой распространённой из них,
+Maven,~--- \term{соглашение важнее настройки} (\eng{convention over
+configuration}): инструмент навязывает проекту единую раскладку папок
+(рис.~\ref{fig:06-1}) и за это сам знает, где лежат исходники, тесты и
+ресурсы.
+
+\begin{figure}[htbp]\centering
+\begin{forest} hierarchy
+[project/
+  [pom.xml]
+  [src/
+    [main/
+      [java/]
+      [resources/]
+    ]
+    [test/
+      [java/]
+      [resources/]
+    ]
+  ]
+  [target/
+    [classes/]
+    [project-1.0.jar]
+  ]
+]
+\end{forest}
+\caption{Стандартная структура Maven-проекта}\label{fig:06-1}
+\end{figure}
+
+Каталог \texttt{target} создаётся при сборке и в систему контроля версий не
+отправляется: он целиком восстанавливается из исходников. Сердце проекта~---
+файл \texttt{pom.xml} (\eng{Project Object Model}), отвечающий на три вопроса:
+чем проект является, из чего собран и как его собирать
+(листинг~\ref{lst:06-1}). Тройка \texttt{groupId}, \texttt{artifactId} и
+\texttt{version}~--- это \term{GAV-координаты}, уникальный адрес артефакта.
+
+\begin{listing}[H]
+\begin{minted}{xml}
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- GAV-координаты: группа, артефакт, версия -->
+  <groupId>com.example</groupId>
+  <artifactId>movie-app</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.2.224</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.0</version>
+      <scope>test</scope>   <!-- нужна только тестам -->
+    </dependency>
+  </dependencies>
+</project>
+\end{minted}
+\caption{Файл pom.xml: координаты, свойства и зависимости}
+\label{lst:06-1}
+\end{listing}
+
+Элемент \texttt{scope} отвечает на вопрос «на каком этапе жизни проекта эта
+библиотека нужна»: \texttt{compile} (по умолчанию)~--- везде;
+\texttt{test}~--- только при компиляции и запуске тестов, в готовый JAR такая
+библиотека не попадёт; \texttt{provided}~--- при компиляции, а в среде
+выполнения её даст сервер приложений; \texttt{runtime}~--- только при запуске
+(типичный случай~--- драйвер СУБД). Зависимости Maven ищет сначала в локальном
+кэше (папка \texttt{.m2/repository}), затем в репозитории Maven~Central,
+поэтому вторая сборка идёт без сети.
+
+\subsection{Жизненный цикл Maven}
+
+Сборка разбита на \term{фазы} (\eng{phases}), идущие строго друг за другом
+(табл.~\ref{tab:06-1}). Правило одно, и оно объясняет всё поведение
+инструмента: запуская фазу, вы автоматически запускаете все предшествующие.
+Поэтому \texttt{mvn package} не просто складывает классы в архив: она проверит
+проект, скомпилирует его и прогонит тесты, и если хоть один тест упадёт,
+JAR-файла вы не получите.
+
+\begin{table}[htbp]
+\caption{Основные фазы жизненного цикла Maven}
+\label{tab:06-1}
+\centering
+\begin{tabular}{L{2.6cm}L{12cm}}
+\toprule
+Фаза & Что происходит \\
+\midrule
+\texttt{validate} & проверка корректности проекта \\
+\texttt{compile} & компиляция исходного кода в \texttt{target/classes} \\
+\texttt{test} & компиляция и запуск модульных тестов \\
+\texttt{package} & упаковка результата в JAR или WAR \\
+\texttt{install} & установка артефакта в локальный репозиторий \\
+\texttt{deploy} & публикация артефакта в удалённый репозиторий \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Команд, которых хватает на весь курс, шесть (листинг~\ref{lst:06-2}). Слово
+\texttt{clean}~--- не фаза цикла, а отдельная команда, удаляющая каталог
+\texttt{target}.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+mvn compile          # скомпилировать исходники
+mvn test             # компиляция + запуск тестов
+mvn package          # + упаковка в JAR (файл появится в target/)
+mvn clean package    # удалить target/, затем собрать заново
+mvn install          # + положить артефакт в локальный репозиторий
+mvn dependency:tree  # показать дерево зависимостей проекта
+\end{minted}
+\caption{Команды Maven, которые нужны каждый день}
+\label{lst:06-2}
+\end{listing}
+
+Последняя команда решает проблему, о которой начинающие не подозревают.
+Подключённая библиотека тянет за собой собственные зависимости, те~--- свои;
+такие зависимости называются \term{транзитивными}. Одна строчка в
+\texttt{pom.xml} легко превращается в сорок JAR-файлов, а две библиотеки могут
+потребовать разных версий одной и той же третьей.
+
+\subsection{Gradle}
+
+Если \texttt{pom.xml}~--- подробная декларация, где каждый шаг расписан
+по-XML-евски многословно, то файл сборки Gradle~--- лаконичный исполняемый
+скрипт на языке Groovy или Kotlin (листинг~\ref{lst:06-3}). Раскладка
+каталогов та же, что у Maven.
+
+\begin{listing}[H]
+\begin{minted}{kotlin}
+plugins { java }
+
+repositories {
+    mavenCentral()          // откуда брать зависимости
+}
+
+dependencies {
+    // implementation - аналог scope compile у Maven
+    implementation("com.h2database:h2:2.2.224")
+    // testImplementation - аналог scope test
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+}
+\end{minted}
+\caption{Файл build.gradle.kts}
+\label{lst:06-3}
+\end{listing}
+
+Рядом с ним в корне лежат \texttt{settings.gradle.kts} (состав модулей) и пара
+\texttt{gradlew}, \texttt{gradlew.bat}~--- \term{обёртка Gradle}
+(\eng{Gradle Wrapper}), которая сама скачивает записанную в проекте версию
+Gradle и запускает сборку ею: устанавливать Gradle участникам команды не
+нужно. Выбор между двумя системами практический: Maven предсказуем и потому
+остаётся стандартом в корпоративной разработке; Gradle гибче и быстрее на
+больших проектах за счёт инкрементальной сборки, а под Android обязателен.
+
+\section{Работа с базой данных: JDBC}
+
+\subsection{Архитектура JDBC}
+
+\term{JDBC} (\eng{Java Database Connectivity})~--- стандартный интерфейс Java
+для работы с реляционными базами данных. Ключевое слово здесь
+«интерфейс»: пакет \texttt{java.sql} не содержит кода, умеющего разговаривать
+с конкретной СУБД, он лишь описывает, какие методы у такого кода должны быть,
+а реализацию~--- \term{драйвер}~--- поставляет производитель базы. Представьте
+розетку: стандарт один, а электростанции у всех разные. Цепочка от приложения
+до базы показана на рис.~\ref{fig:06-2}; при переезде с H2 на PostgreSQL в ней
+меняются ровно два звена~--- драйвер и строка подключения.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\small,node distance=5mm]
+\node[boxw=68mm] (a) {Java-приложение};
+\node[boxw=68mm,below=of a] (b) {JDBC API~--- интерфейсы пакета \texttt{java.sql}};
+\node[boxw=68mm,below=of b] (c) {\texttt{DriverManager}~--- выбирает драйвер по URL};
+\node[boxw=68mm,below=of c] (d) {Драйвер JDBC: H2, PostgreSQL, MySQL};
+\node[boxw=68mm,below=of d] (e) {База данных};
+\draw[flowarrow] (a)--(b);\draw[flowarrow] (b)--(c);
+\draw[flowarrow] (c)--(d);\draw[flowarrow] (d)--(e);
+\end{tikzpicture}
+\caption{Архитектура доступа к базе данных через JDBC}\label{fig:06-2}
+\end{figure}
+
+Интерфейсов, которыми пользуются каждый день, пять (табл.~\ref{tab:06-2}). В
+примерах ниже используется база H2: она написана на Java, подключается одной
+зависимостью и работает в оперативной памяти, не требуя установки сервера.
+
+\begin{table}[htbp]
+\caption{Основные интерфейсы JDBC}
+\label{tab:06-2}
+\centering
+\begin{tabular}{L{4.2cm}L{10.4cm}}
+\toprule
+Интерфейс & Назначение \\
+\midrule
+\texttt{DriverManager} & выдаёт соединение по строке подключения \\
+\texttt{Connection} & соединение с базой; управляет транзакцией \\
+\texttt{Statement} & выполняет запрос без параметров \\
+\texttt{PreparedStatement} & предкомпилированный запрос с параметрами \\
+\texttt{ResultSet} & курсор по строкам результата \texttt{SELECT} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Полный цикл операций}
+
+Работа с базой идёт по одной схеме: получить соединение, подготовить запрос,
+выполнить его, разобрать результат, закрыть всё в обратном порядке. Последний
+шаг берёт на себя \texttt{try}-с-ресурсами: все три интерфейса реализуют
+\texttt{AutoCloseable}. Знаки вопроса в тексте запросов
+(листинг~\ref{lst:06-4})~--- места для параметров.
+
+\begin{listing}[H]
+\begin{minted}{java}
+// H2 в оперативной памяти: сервер устанавливать не нужно
+String url = "jdbc:h2:mem:moviedb;DB_CLOSE_DELAY=-1";
+
+try (Connection conn =
+         DriverManager.getConnection(url, "sa", "")) {
+
+    try (Statement st = conn.createStatement()) {
+        st.execute("CREATE TABLE movies ("
+                 + "id INT AUTO_INCREMENT PRIMARY KEY,"
+                 + "title VARCHAR(200) NOT NULL,"
+                 + "genre VARCHAR(100), year INT)");
+    }
+    // Вставка: параметры нумеруются с единицы
+    try (PreparedStatement ps = conn.prepareStatement(
+            "INSERT INTO movies (title, genre, year)"
+          + " VALUES (?, ?, ?)")) {
+        ps.setString(1, "Матрица");
+        ps.setString(2, "Фантастика");
+        ps.setInt(3, 1999);
+        ps.executeUpdate();   // вернёт число изменённых строк
+    }
+    // Выборка: к столбцам обращаемся по имени
+    try (PreparedStatement ps = conn.prepareStatement(
+            "SELECT * FROM movies WHERE year > ?")) {
+        ps.setInt(1, 1990);
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                System.out.println(rs.getString("title"));
+            }
+        }
+    }
+}
+\end{minted}
+\caption{Создание таблицы и операции CRUD через JDBC}
+\label{lst:06-4}
+\end{listing}
+
+Запомните разделение: \texttt{executeQuery} применяется к \texttt{SELECT} и
+возвращает \texttt{ResultSet}; \texttt{executeUpdate}~--- к \texttt{INSERT},
+\texttt{UPDATE} и \texttt{DELETE} и возвращает количество затронутых строк.
+Обход результата всегда выглядит как \texttt{while (rs.next())}: сразу после
+запроса курсор стоит \emph{перед} первой строкой.
+
+\begin{oshibka}
+\textbf{Частая ошибка: нумерация с нуля.} И параметры запроса, и столбцы
+результата в JDBC нумеруются \emph{с единицы}: вызов \texttt{rs.getString(0)}
+бросит \texttt{SQLException}. Обращение по имени столбца надёжнее.
+\end{oshibka}
+
+\subsection{SQL-инъекция и параметризованный запрос}
+
+Теперь понятно, зачем нужны знаки вопроса. Соблазн собрать запрос
+конкатенацией строк велик, но именно так возникает \term{SQL-инъекция}
+(\eng{SQL injection})~--- атака, при которой пользовательский ввод перестаёт
+быть данными и становится частью команды (листинг~\ref{lst:06-5}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+String userInput = "'; DROP TABLE movies; --";
+
+// ОПАСНО: ввод пользователя склеен с текстом запроса
+String bad = "SELECT * FROM movies WHERE title = '"
+           + userInput + "'";
+// В базу уйдёт два запроса, второй удалит таблицу:
+// SELECT * FROM movies WHERE title = ''; DROP TABLE movies; --'
+
+// БЕЗОПАСНО: параметр передаётся отдельно от текста запроса
+try (PreparedStatement ps = conn.prepareStatement(
+        "SELECT * FROM movies WHERE title = ?")) {
+    ps.setString(1, userInput);   // это данные, а не код
+    ResultSet rs = ps.executeQuery();
+}
+\end{minted}
+\caption{Опасная конкатенация и безопасный параметр}
+\label{lst:06-5}
+\end{listing}
+
+Разница принципиальна: \texttt{PreparedStatement} отправляет базе шаблон
+запроса и значения параметров по отдельности. База разбирает шаблон один раз,
+уже зная, где в нём команда, а где данные, и никакая кавычка внутри значения
+структуру запроса изменить не может; побочная выгода~--- скорость. Правило:
+пользовательский ввод в текст SQL-запроса не подставляется никогда.
+
+\subsection{Паттерн DAO}
+
+В листинге~\ref{lst:06-4} SQL перемешан с логикой программы. На двадцати
+строках это незаметно, на десяти тысячах~--- катастрофа: чтобы поменять
+структуру таблицы, придётся искать запросы по всему проекту. Ответ~---
+\term{DAO} (\eng{Data Access Object}): весь SQL собирается в отдельном слое, а
+остальная программа работает с обычными Java-объектами
+(листинг~\ref{lst:06-6}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+public interface MovieDAO {
+    void insert(Movie movie) throws SQLException;
+    Optional<Movie> findById(int id) throws SQLException;
+    List<Movie> findByGenre(String genre) throws SQLException;
+    void delete(int id) throws SQLException;
+}
+
+public class MovieDAOImpl implements MovieDAO {
+
+    private final Connection conn;
+
+    public MovieDAOImpl(Connection conn) { this.conn = conn; }
+
+    @Override
+    public void insert(Movie movie) throws SQLException {
+        String sql = "INSERT INTO movies (title, genre, year)"
+                   + " VALUES (?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(
+                sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, movie.getTitle());
+            ps.setString(2, movie.getGenre());
+            ps.setInt(3, movie.getYear());
+            ps.executeUpdate();
+            // база сама выдала значение id - забираем его
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) movie.setId(keys.getInt(1));
+            }
+        }
+    }
+}
+\end{minted}
+\caption{Интерфейс DAO и фрагмент его реализации}
+\label{lst:06-6}
+\end{listing}
+
+Выгод три: бизнес-логика ничего не знает ни о SQL, ни о JDBC; в тестах
+реализацию подменяют заглушкой, и база не нужна; саму реализацию можно
+заменить целиком, перейдя на Hibernate. Метод \texttt{findById} возвращает
+\texttt{Optional<Movie>}, потому что отсутствие строки~--- обычный результат
+поиска, а не ошибка. И ещё правило: превращение строки результата в объект
+выносят в единственный приватный метод.
+
+\section{ORM и Hibernate}
+
+\subsection{Сущность и конфигурация}
+
+Даже с паттерном DAO значительная часть кода остаётся однообразной: разложить
+объект по параметрам запроса, собрать объект из строки результата, повторить
+для каждой сущности. \term{ORM} (\eng{Object-Relational Mapping})~---
+технология, которая делает это за вас: вы один раз описываете соответствие
+между классом и таблицей, а SQL фреймворк генерирует сам. Самая
+распространённая реализация для Java~--- \term{Hibernate}; соответствие
+задаётся аннотациями прямо в классе (листинг~\ref{lst:06-7}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+import jakarta.persistence.*;
+
+@Entity                       // класс отображается на таблицу
+@Table(name = "movies")
+public class Movie {
+
+    @Id                       // первичный ключ
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;       // значение выдаёт сама база
+
+    @Column(name = "title", nullable = false, length = 200)
+    private String title;
+
+    private String genre;
+    private Integer year;
+
+    // Конструктор без аргументов обязателен для JPA
+    public Movie() {}
+
+    // Геттеры, сеттеры и toString() опущены
+}
+\end{minted}
+\caption{Класс-сущность с аннотациями JPA}
+\label{lst:06-7}
+\end{listing}
+
+Аннотации отвечают на вопрос «что отображать». На вопрос «куда подключаться и
+что делать со схемой» отвечает файл \texttt{hibernate.cfg.xml}
+(листинг~\ref{lst:06-8}) из каталога \texttt{src/main/resources}.
+
+\begin{listing}[H]
+\begin{minted}{xml}
+<hibernate-configuration>
+  <session-factory>
+    <property name="hibernate.connection.url">
+      jdbc:h2:mem:moviedb;DB_CLOSE_DELAY=-1</property>
+    <property name="hibernate.connection.username">sa</property>
+    <property name="hibernate.dialect">
+      org.hibernate.dialect.H2Dialect</property>
+    <!-- create: пересоздать схему при каждом запуске;
+         update - дополнить, validate - только проверить -->
+    <property name="hibernate.hbm2ddl.auto">create</property>
+    <property name="hibernate.show_sql">true</property>
+    <mapping class="com.movies.Movie"/>
+  </session-factory>
+</hibernate-configuration>
+\end{minted}
+\caption{Конфигурация Hibernate для базы H2}
+\label{lst:06-8}
+\end{listing}
+
+Диалект~--- это знание Hibernate о том, чем SQL конкретной СУБД отличается от
+стандарта: как называется автоинкремент, как ограничить число строк. Именно он
+позволяет одному коду работать и с H2, и с PostgreSQL. Свойство
+\texttt{hbm2ddl.auto} со значением \texttt{create} удобно на занятиях и
+недопустимо в рабочей системе: при каждом запуске схема со всеми данными
+создаётся заново.
+
+\subsection{SessionFactory, Session и запросы}
+
+\texttt{SessionFactory}~--- тяжёлая фабрика: она читает конфигурацию,
+разбирает аннотации сущностей, поднимает пул соединений; создаётся один раз за
+время жизни приложения и потокобезопасна. \texttt{Session}~--- лёгкий объект
+на одну единицу работы: открыли, сделали дело, закрыли. Аналогия~--- банк и
+визит в банк: здание с сейфами строят один раз, а приходят в него ежедневно и
+ненадолго. В листинге~\ref{lst:06-9} собраны основные операции; ни одного
+запроса \texttt{INSERT} или \texttt{SELECT} мы не пишем.
+
+\begin{listing}[H]
+\begin{minted}{java}
+SessionFactory factory = new Configuration()
+        .configure("hibernate.cfg.xml")
+        .buildSessionFactory();
+
+// СОХРАНЕНИЕ: изменения уходят в базу при коммите
+try (Session session = factory.openSession()) {
+    Transaction tx = session.beginTransaction();
+    session.persist(new Movie("Матрица", "Фантастика", 1999));
+    tx.commit();
+}
+// ПОИСК ПО КЛЮЧУ И ЗАПРОС НА HQL: имена класса и полей,
+// а не имена таблицы и столбцов
+try (Session session = factory.openSession()) {
+    Movie m = session.get(Movie.class, 1);
+    List<Movie> found = session.createQuery(
+            "FROM Movie WHERE genre = :g ORDER BY year",
+            Movie.class)
+        .setParameter("g", "Фантастика").list();
+}
+factory.close();
+\end{minted}
+\caption{Операции Hibernate: сохранение, поиск по ключу, запрос на HQL}
+\label{lst:06-9}
+\end{listing}
+
+\term{HQL} (\eng{Hibernate Query Language}) выглядит как SQL, но оперирует
+именами классов и полей Java: в запросе стоит \texttt{FROM Movie}, а не
+\texttt{FROM movies}; запросы на изменение выполняются отдельным методом
+\texttt{createMutationQuery}. Тот же запрос можно собрать и из объектов
+Java~--- через \term{Criteria API}, где вместо строки используются
+\texttt{CriteriaBuilder}, \texttt{CriteriaQuery} и \texttt{Root}. Строк нет,
+значит, опечатку поймает компилятор, а условия можно добавлять в цикле~--- это
+главное преимущество при построении динамических фильтров. Расплата~---
+многословность: запрос на HQL занимает строку, а на Criteria~API~--- пять.
+
+Связи между таблицами описывают четыре аннотации: \texttt{@OneToOne}
+(фильм~--- описание), \texttt{@ManyToOne} (фильм~--- режиссёр),
+\texttt{@OneToMany} (режиссёр~--- фильмы) и \texttt{@ManyToMany} (фильмы~---
+актёры). Первые две ставят вместе с \texttt{@JoinColumn} на владеющей стороне,
+в таблице которой лежит внешний ключ; \texttt{@OneToMany} описывает ту же
+связь с обратной стороны и обязана нести параметр \texttt{mappedBy} с именем
+поля владельца, иначе в схеме появится лишний внешний ключ; для
+\texttt{@ManyToMany} нужна отдельная таблица-связка, задаваемая аннотацией
+\texttt{@JoinTable}. Параметр \texttt{fetch = FetchType.LAZY} включает
+\term{ленивую загрузку}: связанный объект не читается из базы, пока к полю не
+обратятся, зато после закрытия сессии такое обращение даёт
+\texttt{LazyInitializationException}.
+
+\subsection{JPA и Hibernate, персистентный контекст}
+
+Аннотации мы импортируем из пакета \texttt{jakarta.persistence}, а
+\texttt{Session}~--- из \texttt{org.hibernate}: перед нами два уровня.
+\term{JPA} (\eng{Jakarta Persistence API})~--- спецификация: набор
+интерфейсов, аннотаций и правил, в котором нет кода, ходящего в базу;
+Hibernate~--- её реализация. Разница такая же, как между строительными нормами
+и бригадой, которая по ним строит: пока вы пользуетесь стандартными
+аннотациями, бригаду можно сменить. У каждого понятия есть двойник: паре
+\texttt{EntityManagerFactory} и \texttt{EntityManager} соответствуют
+\texttt{SessionFactory} и \texttt{Session}, языку JPQL~--- HQL, файлу
+\texttt{persistence.xml}~--- \texttt{hibernate.cfg.xml}.
+
+Сессия~--- не просто трубка к базе: внутри неё живёт \term{персистентный
+контекст} (\eng{persistence context}), набор объектов, за которыми она следит.
+Это кэш первого уровня~--- запросив в одной сессии сущность с одним ключом
+дважды, вы получите тот же объект. Аналогия~--- черновик на столе: пока вы его
+правите, в архив ничего не уходит, а правки уезжают одной пачкой при
+\term{сбросе} (\eng{flush}), совпадающем с коммитом. Отсюда четыре состояния
+сущности (табл.~\ref{tab:06-3}).
+
+\begin{table}[htbp]
+\caption{Четыре состояния сущности}
+\label{tab:06-3}
+\centering
+\begin{tabular}{L{3.4cm}L{11.2cm}}
+\toprule
+Состояние & Что оно означает \\
+\midrule
+\eng{transient} & обычный объект после \texttt{new}: контекст о нём не знает, строки в базе нет \\
+\eng{persistent} & объект под управлением контекста: изменение полей само превратится в \texttt{UPDATE} \\
+\eng{detached} & был управляемым, но сессия закрылась: строка есть, за полями никто не следит \\
+\eng{removed} & помечен к удалению: \texttt{DELETE} уйдёт при ближайшем сбросе \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Переходы выполняют методы сессии: \texttt{persist} делает объект управляемым,
+\texttt{get} загружает строку и сразу берёт объект под управление,
+\texttt{remove} помечает к удалению, закрытие сессии переводит всё в
+\eng{detached}. Отсюда классическая ошибка новичка: правка объекта после
+\texttt{session.close()} в базу не попадает. Спасает новая сессия и метод
+\texttt{merge}, но с тонкостью: он не превращает переданный объект в
+управляемый, а возвращает \emph{новый} объект-копию.
+
+\subsection{Lombok: меньше шаблонного кода}
+
+Вернёмся к листингу~\ref{lst:06-7}: там, где написано «геттеры, сеттеры и
+\texttt{toString()} опущены», должно быть около десяти методов, ни в одном из
+которых нет логики. Представьте нотариуса, который на каждой странице толстой
+стопки ставит одну и ту же подпись: можно расписаться сто раз, а можно
+вырезать печать. \term{Lombok}~--- такая печать для Java-класса: библиотека
+работает как обработчик аннотаций и дописывает нужные методы прямо в файл
+\texttt{.class}. Её аннотации импортируются из пакета \texttt{lombok}
+(листинг~\ref{lst:06-10}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Entity
+@Table(name = "movies")
+@Getter                 // геттеры для всех полей
+@Setter                 // сеттеры для всех полей
+@NoArgsConstructor      // обязателен для JPA
+@AllArgsConstructor     // конструктор со всеми полями
+@ToString
+public class Movie {
+    // поля те же, что в листинге 6.7;
+    // ни одного метода писать не нужно
+}
+\end{minted}
+\caption{Класс-сущность с аннотациями Lombok}
+\label{lst:06-10}
+\end{listing}
+
+Подключается Lombok зависимостью с областью видимости \texttt{provided}: при
+компиляции нужна, в готовый JAR не попадает. Пятьдесят строк сжались до
+пятнадцати, а поведение не изменилось.
+
+\begin{vrezka}
+\textbf{Важно.} Конструктор без аргументов обязателен для JPA, а не просто
+удобен: Hibernate создаёт объект сущности через рефлексию \emph{до} того, как
+заполнит поля значениями из базы. А аннотацию \texttt{@Data} на сущность
+вешать не стоит: её \texttt{equals} и \texttt{toString} используют все поля,
+включая ленивые связи, и вывод объекта в консоль обернётся десятком лишних
+запросов или исключением.
+\end{vrezka}
+
+\section{Транзакции и уровни изоляции}
+
+\subsection{Свойства ACID и управление транзакцией}
+
+\term{Транзакция}~--- группа операций с базой, выполняемая как единое
+неделимое целое. Представьте покупку двух билетов в кино на соседние места:
+либо вам достаются оба, либо ни одного. Требования к транзакциям сокращают в
+аббревиатуру \term{ACID}: \emph{атомарность}~--- всё или ничего, если на
+середине что-то упало, база откатывает уже сделанное;
+\emph{согласованность}~--- ограничения целостности не нарушаются;
+\emph{изолированность}~--- параллельные транзакции не мешают друг другу;
+\emph{долговечность}~--- после фиксации данные переживут отключение питания.
+Три свойства из четырёх обеспечиваются сами; изолированность~--- регулятор,
+который вы поворачиваете сами, выбирая между строгостью и скоростью.
+
+По умолчанию соединение работает в режиме автоматической фиксации: каждый
+запрос сам себе транзакция. Чтобы объединить запросы, режим выключают вызовом
+\texttt{setAutoCommit(false)}, а дальше сами решают, завершить транзакцию
+методом \texttt{commit} или отменить методом \texttt{rollback}. Иногда
+отменить хочется только последний кусок работы~--- для этого есть \term{точка
+сохранения} (\eng{savepoint}), работающая как сохранение в компьютерной игре
+(листинг~\ref{lst:06-11}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Заказ обязателен, начисление бонусов - необязательно
+conn.setAutoCommit(false);          // начало транзакции
+try {
+    insertOrderRow(conn, customerId, productId);
+
+    // До сюда заказ уже корректен - ставим отметку
+    Savepoint afterOrder = conn.setSavepoint("after_order");
+    try {
+        addBonusPoints(conn, customerId, bonus);
+    } catch (SQLException bonusError) {
+        conn.rollback(afterOrder);  // откат до отметки
+    }
+    conn.commit();                  // фиксируем то, что уцелело
+} catch (SQLException e) {
+    conn.rollback();                // полный откат транзакции
+    throw e;
+} finally {
+    conn.setAutoCommit(true);       // вернуть режим как было
+}
+\end{minted}
+\caption{Транзакция с точкой сохранения}
+\label{lst:06-11}
+\end{listing}
+
+Блок \texttt{finally} здесь не формальность: соединение почти всегда приходит
+из \term{пула соединений} (\eng{connection pool})~--- набора заранее открытых
+соединений, которые выдаются на время и возвращаются обратно, как книги в
+библиотеке. Оставить возвращённое соединение в режиме открытой транзакции
+значит подложить мину следующему, кто его возьмёт.
+
+\subsection{Аномалии параллельного выполнения}
+
+Пока транзакции идут по очереди, всё безупречно. Проблемы начинаются, когда
+они пересекаются во времени. Классических аномалий четыре
+(табл.~\ref{tab:06-4}); представляйте себе две транзакции, работающие с одним
+и тем же счётом.
+
+\begin{table}[htbp]
+\caption{Аномалии параллельного выполнения транзакций}
+\label{tab:06-4}
+\centering
+\begin{tabular}{L{3.5cm}L{7.3cm}L{4cm}}
+\toprule
+Аномалия & Что происходит & Запрещена с уровня \\
+\midrule
+Грязное чтение & транзакция видит ещё не зафиксированные изменения соседней; после её отката окажется, что таких данных не было & \eng{READ COMMITTED} \\
+Неповторяющееся чтение & два одинаковых чтения одной строки внутри транзакции дают разные значения & \eng{REPEATABLE READ} \\
+Фантомное чтение & между двумя одинаковыми выборками меняется состав строк: появляются новые & \eng{SERIALIZABLE} \\
+Потерянное обновление & две транзакции прочитали одно значение и записали своё; вторая затёрла работу первой & устраняется не уровнем, а блокировкой \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Разница между вторым и третьим случаем тонкая: при неповторяющемся чтении
+меняется содержимое известной строки, при фантомном~--- сам состав выборки.
+Потерянное обновление стоит особняком: от него можно защититься, не трогая
+уровень изоляции,~--- достаточно писать
+\texttt{UPDATE accounts SET balance = balance + 500} вместо чтения значения в
+программу и обратной записи.
+
+\subsection{Четыре уровня изоляции}
+
+Стандарт SQL определяет четыре уровня, и каждый следующий запрещает больше
+аномалий, но стоит дороже: чем строже изоляция, тем больше блокировок и тем
+чаще транзакции ждут друг друга (табл.~\ref{tab:06-5}).
+
+\begin{table}[htbp]
+\caption{Уровни изоляции и допускаемые ими аномалии}
+\label{tab:06-5}
+\centering
+\begin{tabular}{L{4.6cm}C{3.1cm}C{3.5cm}C{2.8cm}}
+\toprule
+Уровень & Грязное чтение & Неповторяющееся чтение & Фантомное чтение \\
+\midrule
+\eng{READ UNCOMMITTED} & возможно & возможно & возможно \\
+\eng{READ COMMITTED} & нет & возможно & возможно \\
+\eng{REPEATABLE READ} & нет & нет & возможно \\
+\eng{SERIALIZABLE} & нет & нет & нет \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Запомнить их проще всего через бытовую сцену: вы читаете документ, над которым
+работает коллега. Заглядывать через плечо во время набора~---
+\eng{READ UNCOMMITTED}: быстро, но вы читаете и то, что он сотрёт. Смотреть
+только сохранённые версии~--- \eng{READ COMMITTED}. Взять копию и читать
+только её~--- \eng{REPEATABLE READ}. Запретить коллеге трогать документ~---
+\eng{SERIALIZABLE}: надёжнее всего, но коллега простаивает. Уровень задаётся
+на соединении и обязательно \emph{до} начала транзакции
+(листинг~\ref{lst:06-12}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Уровень ставим ДО setAutoCommit и до первого запроса
+conn.setTransactionIsolation(
+        Connection.TRANSACTION_REPEATABLE_READ);
+conn.setAutoCommit(false);
+\end{minted}
+\caption{Установка уровня изоляции в JDBC}
+\label{lst:06-12}
+\end{listing}
+
+Остальные константы того же интерфейса~---
+\texttt{TRANSACTION\_READ\_UNCOMMITTED}, \texttt{TRANSACTION\_READ\_COMMITTED}
+и \texttt{TRANSACTION\_SERIALIZABLE}; узнать уровень по умолчанию позволяет
+\texttt{conn.getMetaData().getDefaultTransactionIsolation()}. Тонкость в том,
+что JDBC описывает интерфейс, а поддерживает его конкретная СУБД: PostgreSQL
+молча выполнит \eng{READ UNCOMMITTED} как \eng{READ COMMITTED}, MySQL по
+умолчанию работает на уровне \eng{REPEATABLE READ}, а Oracle реализует лишь
+два уровня из четырёх. Не полагайтесь на умолчания: при переезде между СУБД
+поведение приложения изменится молча.
+
+\subsection{Блокировки в Hibernate}
+
+Поднимать уровень изоляции ради защиты от потерянного обновления дорого;
+дешевле \term{оптимистичная блокировка}: будем считать, что конфликтов почти
+не бывает, но если конфликт случится~--- заметим его и не дадим затереть чужую
+работу. Достаточно добавить в сущность поле с аннотацией \texttt{@Version}
+(листинг~\ref{lst:06-13}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Entity
+public class Account {
+    @Id
+    private Integer id;
+    private long balance;
+
+    @Version           // служебное поле, руками не трогаем
+    private int version;
+}
+
+// Hibernate добавит версию в условие обновления:
+// UPDATE accounts SET balance = ?, version = 6
+//   WHERE id = ? AND version = 5
+try {
+    tx.commit();
+} catch (StaleStateException | OptimisticLockException e) {
+    System.out.println("Данные изменил кто-то другой");
+}
+\end{minted}
+\caption{Оптимистичная блокировка через версию строки}
+\label{lst:06-13}
+\end{listing}
+
+Если параллельная транзакция уже зафиксировала свои изменения, версия в базе
+стала равна шести, условие \texttt{version = 5} не выполнится, обновится ноль
+строк~--- и коммит завершится исключением. Это как бронирование места в
+поезде: вы спокойно выбираете вагон и полку, и только при оплате система
+проверяет, свободно ли ещё выбранное место.
+
+Если конфликты не редкость, а норма~--- склад с остатками товара, продажа
+последних билетов,~--- выгоднее \term{пессимистичная блокировка}: строка
+захватывается сразу при чтении вызовом
+\texttt{session.get(Account.class, 1, LockMode.PESSIMISTIC\_WRITE)}, что
+превращается в запрос \texttt{SELECT ... FOR UPDATE}, и остальные транзакции
+ждут до конца вашей~--- за это платят простоем и риском взаимной блокировки.
+Всё, что здесь написано руками, в Spring сводится к аннотации
+\texttt{@Transactional} над методом сервиса; она разбирается в
+главе~\ref{ch:07}.
+
+\section{Функциональный стиль: Stream API}
+
+\subsection{Поток данных против коллекции}
+
+Коллекция~--- это ящик с яблоками в кладовке: она отвечает на вопросы «что у
+меня есть» и «сколько». \term{Поток} (\eng{stream})~--- конвейерная лента на
+сортировочной линии: сами яблоки на ней не живут, они по ней едут, а вдоль
+ленты стоят рабочие~--- один выбрасывает подгнившие, второй наклеивает
+стикеры, третий раскладывает по ящикам. Лента ничего не хранит: она описывает,
+что делать с каждым яблоком. Отсюда все отличия: коллекция хранит элементы,
+поток~--- нет; коллекцию можно обойти сколько угодно раз, поток~--- ровно
+один; поток ленив и не делает ничего, пока не потребуют результат
+(листинг~\ref{lst:06-14}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Императивно: вы командуете компьютером пошагово
+List<String> namesA = new ArrayList<>();
+for (User user : users) {
+    if (user.age() >= 18) {
+        namesA.add(user.name());
+    }
+}
+Collections.sort(namesA);
+
+// Декларативно: вы описываете нужный результат
+List<String> namesB = users.stream()
+        .filter(user -> user.age() >= 18)
+        .map(User::name)
+        .sorted()
+        .toList();
+\end{minted}
+\caption{Императивный и декларативный стиль}
+\label{lst:06-14}
+\end{listing}
+
+Второй вариант короче, но короче~--- не главное: в нём нет
+переменной-накопителя, которую можно испортить, нет индексов, в которых можно
+ошибиться, и каждая строка читается как отдельная фраза. Любой конвейер
+состоит ровно из трёх частей (рис.~\ref{fig:06-3}).
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\small,node distance=6mm]
+\node[boxw=32mm] (a) {\textbf{Источник}\\[2pt]\scriptsize коллекция, массив,\\\scriptsize файл, генератор};
+\node[boxw=42mm,right=of a] (b) {\textbf{Промежуточные}\\[2pt]\scriptsize \texttt{filter}, \texttt{map}, \texttt{sorted}\\\scriptsize ленивы, возвращают поток};
+\node[boxw=42mm,right=of b] (c) {\textbf{Терминальная}\\[2pt]\scriptsize \texttt{collect}, \texttt{count}\\\scriptsize запускает весь конвейер};
+\draw[flowarrow] (a)--(b);\draw[flowarrow] (b)--(c);
+\end{tikzpicture}
+\caption{Строение конвейера обработки данных}\label{fig:06-3}
+\end{figure}
+
+Не путайте термины: в главе~\ref{ch:05} словом «поток» назывались поток
+выполнения (\texttt{Thread}) и поток ввода-вывода (\texttt{InputStream}).
+\texttt{Stream} из пакета \texttt{java.util.stream}~--- третья, независимая
+сущность.
+
+\subsection{Создание потока и промежуточные операции}
+
+Источником потока может быть коллекция, массив, перечисленные значения,
+правило генерации и даже файл (листинг~\ref{lst:06-15}). Массив превращает в
+поток метод \texttt{Arrays.stream}. Отдельно стоит последний случай:
+\texttt{Files.lines} читает файл по строке по мере надобности, поэтому за
+потоком стоит открытый файловый дескриптор и закрывать такой поток
+обязательно.
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Из коллекции и из перечисленных значений
+List<String> cities = List.of("Москва", "Казань", "Сочи");
+Stream<String> s1 = cities.stream();
+Stream<String> s2 = Stream.of("а", "б", "в");
+
+// Бесконечный поток по правилу: без limit он не кончится
+List<Integer> powers = Stream.iterate(1, n -> n * 2)
+        .limit(10).toList();          // [1, 2, 4, ..., 512]
+
+// Строки файла читаются лениво, поэтому поток закрывают
+try (Stream<String> lines = Files.lines(Path.of("app.log"))) {
+    long errors = lines.filter(l -> l.contains("ERROR")).count();
+    System.out.println("Строк с ошибками: " + errors);
+}
+\end{minted}
+\caption{Способы получить поток}
+\label{lst:06-15}
+\end{listing}
+
+Промежуточная операция возвращает новый поток, поэтому такие операции
+выстраиваются в цепочку любой длины~--- каждая из них очередной рабочий на
+конвейере (табл.~\ref{tab:06-6}).
+
+\begin{table}[htbp]
+\caption{Промежуточные операции потока}
+\label{tab:06-6}
+\centering
+\begin{tabular}{L{4.4cm}L{10.2cm}}
+\toprule
+Операция & Что делает \\
+\midrule
+\texttt{filter(p)} & пропускает дальше элементы, для которых предикат истинен \\
+\texttt{map(f)} & преобразует каждый элемент в другой, возможно другого типа \\
+\texttt{flatMap(f)} & превращает каждый элемент в поток и сливает их в один \\
+\texttt{distinct()} & убирает дубликаты, сравнивая через \texttt{equals} \\
+\texttt{sorted(cmp)} & сортирует по естественному порядку или по компаратору \\
+\texttt{limit(n)}, \texttt{skip(n)} & оставляет первые \texttt{n} элементов, пропускает первые \texttt{n} \\
+\texttt{takeWhile(p)} & берёт элементы, пока предикат истинен, и останавливается \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Типичная цепочка показана в листинге~\ref{lst:06-16}. Обратите внимание на две
+последние строки: \texttt{takeWhile} обрывает поток на первом несовпадении, а
+\texttt{filter} проверяет все элементы до конца.
+
+\begin{listing}[H]
+\begin{minted}{java}
+record User(String name, int age, String city) {}
+
+List<User> users = List.of(
+        new User("Анна", 28, "Москва"),
+        new User("Борис", 17, "Казань"),
+        new User("Вера", 34, "Москва"),
+        new User("Анна", 28, "Москва"));   // полный дубликат
+
+List<String> names = users.stream()
+        .filter(u -> u.age() >= 18)
+        .distinct()            // record сам умеет equals
+        .sorted(Comparator.comparingInt(User::age).reversed())
+        .map(User::name)
+        .toList();             // [Вера, Анна]
+
+List<Integer> nums = List.of(1, 3, 5, 8, 7, 9);
+nums.stream().takeWhile(n -> n % 2 != 0).toList(); // [1, 3, 5]
+nums.stream().filter(n -> n % 2 != 0).toList();    // [1,3,5,7,9]
+\end{minted}
+\caption{Цепочки промежуточных операций}
+\label{lst:06-16}
+\end{listing}
+
+Отдельного разговора заслуживает \texttt{flatMap}: он нужен, когда каждый
+элемент сам является набором, а вам нужен один плоский список. Список списков
+имён превращается в список имён вызовом
+\texttt{teams.stream().flatMap(List::stream).toList()}. Разница такая:
+\texttt{map}~--- «один элемент на входе, один на выходе»,
+\texttt{flatMap}~--- «один на входе, ноль или больше на выходе».
+
+\subsection{Ленивость~--- главное свойство потоков}
+
+Вот утверждение, которое чаще всего понимают неправильно: промежуточные
+операции не выполняются в момент вызова. Вызов \texttt{filter} не фильтрует,
+вызов \texttt{map} не преобразует~--- они лишь достраивают описание конвейера.
+Работа начинается, только когда вызвана терминальная операция: она включает
+мотор и тянет элементы через всю цепочку. Диктуя официанту заказ, вы не ждёте,
+что повар начнёт жарить после каждого вашего слова. Убедиться в этом позволяет
+промежуточная операция \texttt{peek}: она подсматривает за проходящими
+элементами, не меняя их (листинг~\ref{lst:06-17}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+List<String> cities = List.of("Москва", "Казань", "Самара");
+
+Stream<String> pipeline = cities.stream()
+        .peek(c -> System.out.println("  peek: " + c))
+        .filter(c -> c.length() > 5)
+        .map(String::toUpperCase);
+
+System.out.println("Конвейер построен, но не запущен");
+System.out.println(pipeline.toList());
+
+// Вывод: сначала строка "Конвейер построен, но не запущен",
+// и только затем три строки "peek: ..." и результат
+// [МОСКВА, КАЗАНЬ, САМАРА]
+\end{minted}
+\caption{Ленивость конвейера, показанная через peek}
+\label{lst:06-17}
+\end{listing}
+
+Из ленивости следует, что элементы обрабатываются «по вертикали»: поток берёт
+первый элемент, проводит его через всю цепочку до конца, затем берётся за
+второй. Поэтому конвейер с \texttt{findFirst} останавливается, как только
+ответ найден. Операции \texttt{findFirst}, \texttt{findAny},
+\texttt{anyMatch}, \texttt{allMatch}, \texttt{noneMatch} и \texttt{limit} за
+это называют \term{короткозамыкающими} (\eng{short-circuiting}).
+
+\begin{oshibka}
+\textbf{Частая ошибка: конвейер без терминальной операции.} Строка
+\texttt{users.stream().map(u -> u.name().toUpperCase());} ничего не изменит и
+ничего не напечатает~--- она лишь построит описание и выбросит его. И не
+пишите в \texttt{peek} ничего, кроме печати для отладки: спецификация не
+гарантирует, что он будет вызван для каждого элемента.
+\end{oshibka}
+
+\subsection{Терминальные операции и сборка результата}
+
+Терминальная операция завершает конвейер: она возвращает не поток, а
+конкретный результат~--- или не возвращает ничего. Их немного:
+\texttt{forEach} и \texttt{count} выполняют действие и считают элементы,
+\texttt{min} и \texttt{max} находят крайние, \texttt{anyMatch},
+\texttt{allMatch} и \texttt{noneMatch} отвечают на вопросы «хоть один», «все»,
+«ни один», \texttt{findFirst} возвращает первый элемент, \texttt{reduce}
+сворачивает поток в одно значение, а \texttt{toList} и \texttt{collect}
+собирают результат в коллекцию (листинг~\ref{lst:06-18}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+List<Integer> numbers = List.of(4, 8, 15, 16, 23, 42);
+int sum = numbers.stream().reduce(0, Integer::sum);
+
+long adults = users.stream().filter(u -> u.age() >= 18).count();
+
+Optional<User> oldest = users.stream()
+        .max(Comparator.comparingInt(User::age));
+oldest.ifPresent(u -> System.out.println(u.name()));
+\end{minted}
+\caption{Свёртка, подсчёты и поиск крайнего}
+\label{lst:06-18}
+\end{listing}
+
+Одна ловушка стоит того, чтобы узнать о ней заранее: на \emph{пустом} потоке
+\texttt{allMatch} и \texttt{noneMatch} возвращают \texttt{true}, а
+\texttt{anyMatch}~--- \texttt{false}. Это не ошибка, а математическая логика:
+утверждение «все элементы пустого множества обладают свойством X» истинно,
+потому что опровергнуть его нечем. Поэтому проверку \texttt{allMatch} почти
+всегда сопровождают проверкой, что данные вообще есть.
+
+Самая мощная терминальная операция~--- \texttt{collect}: в неё передаётся
+\term{сборщик} (\eng{collector}), описывающий, как накапливать результат.
+Готовые сборщики живут в классе \texttt{Collectors}, и самый интересный из
+них~--- \texttt{groupingBy}: он раскладывает элементы по корзинам, как
+почтальон раскладывает письма по ячейкам подъезда. Первый аргумент определяет
+ячейку, а второй~--- \term{нижестоящий сборщик} (\eng{downstream collector})~---
+говорит, что сделать с письмами внутри каждой ячейки
+(листинг~\ref{lst:06-19}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+record Employee(String name, String dept, int salary) {}
+
+List<Employee> staff = List.of(
+    new Employee("Анна",  "Разработка",   180_000),
+    new Employee("Борис", "Разработка",   210_000),
+    new Employee("Вера",  "Тестирование", 140_000));
+
+// Сколько человек в каждом отделе
+Map<String, Long> byDept = staff.stream()
+        .collect(Collectors.groupingBy(Employee::dept,
+                 Collectors.counting()));
+
+// Средняя зарплата по отделам: другой нижестоящий сборщик
+Map<String, Double> avg = staff.stream()
+        .collect(Collectors.groupingBy(Employee::dept,
+                 Collectors.averagingInt(Employee::salary)));
+
+// В корзины кладём не сотрудников, а только их имена;
+// третий аргумент TreeMap::new отсортировал бы ключи
+Map<String, List<String>> byName = staff.stream()
+        .collect(Collectors.groupingBy(Employee::dept,
+                 Collectors.mapping(Employee::name,
+                                    Collectors.toList())));
+
+// partitioningBy - ровно две корзины по предикату
+Map<Boolean, List<Employee>> rich = staff.stream()
+        .collect(Collectors.partitioningBy(
+                 e -> e.salary() >= 160_000));
+\end{minted}
+\caption{Сборка, группировка и разбиение}
+\label{lst:06-19}
+\end{listing}
+
+Про печать результатов договоримся сразу: \texttt{groupingBy} собирает
+результат в \texttt{HashMap}, а она порядок ключей не хранит~--- пары почти
+наверняка окажутся не в том порядке, в каком шли элементы; нужен порядок~---
+задайте тип карты. Последний в листинге \texttt{partitioningBy}~--- частный
+случай группировки ровно на две корзины по предикату; его преимущество в том,
+что в результате всегда есть оба ключа, даже если одна корзина пуста. Ещё один
+частый сборщик, \texttt{Collectors.joining(", ", "[", "]")}, склеивает поток
+строк в одну с разделителем, префиксом и суффиксом.
+
+\subsection{Примитивные потоки и Optional}
+
+\texttt{Stream<Integer>} хранит объекты, а значит, на каждое число тратится
+упаковка в \texttt{Integer}; на миллионе элементов это заметно. Поэтому есть
+три специализированных потока~--- \texttt{IntStream}, \texttt{LongStream} и
+\texttt{DoubleStream}. Переход в них делают методы \texttt{mapToInt} и его
+родственники, обратно~--- метод \texttt{boxed}. Взамен они дают операции,
+которых у объектного потока нет: \texttt{sum}, \texttt{average} и особенно
+\texttt{summaryStatistics}, считающий за один проход сразу пять величин
+(листинг~\ref{lst:06-20}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+int total = staff.stream().mapToInt(Employee::salary).sum();
+
+// range даёт 0..4, rangeClosed - 1..5; boxed возвращает
+// обратно в Stream<Integer>
+List<Integer> boxed = IntStream.rangeClosed(1, 5)
+        .boxed().toList();
+
+IntSummaryStatistics st = staff.stream()
+        .mapToInt(Employee::salary)
+        .summaryStatistics();
+System.out.printf("От %d до %d, в среднем %.2f%n",
+        st.getMin(), st.getMax(), st.getAverage());
+\end{minted}
+\caption{Примитивный поток и сводная статистика}
+\label{lst:06-20}
+\end{listing}
+
+Заметьте: \texttt{average} возвращает не число, а \texttt{OptionalDouble}~---
+у пустого потока нет ни среднего, ни максимума, и язык заставляет обработать
+этот случай явно. \texttt{Optional<T>}~--- контейнер, который либо содержит
+значение, либо пуст; это способ сказать «результата может не быть» на уровне
+типа, а не через \texttt{null} и \texttt{NullPointerException}. Значение
+достают методами \texttt{orElse} (запасной вариант), \texttt{orElseThrow}
+(своё исключение с внятным текстом) и \texttt{ifPresentOrElse} (два действия
+на оба случая); метод \texttt{get} без проверки использовать не стоит.
+
+\subsection{Параллельные потоки и одноразовость}
+
+Одна из причин появления Stream~API~--- возможность распараллелить обработку,
+не написав ни строчки про потоки выполнения: достаточно заменить
+\texttt{stream()} на \texttt{parallelStream()}. Поток разбивается на части,
+части считаются в общем пуле \texttt{ForkJoinPool}, результаты сливаются
+обратно. Бесплатным это не бывает: параллельность помогает, когда данных
+много, источник легко делится (массив, \texttt{ArrayList}, диапазон чисел), а
+операции тяжёлые и независимые; и вредит, когда коллекция мала, источник
+делится плохо (\texttt{LinkedList}, файл) или важен порядок. Главный
+запрет~--- никакого разделяемого изменяемого состояния
+(листинг~\ref{lst:06-21}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// ОШИБКА: ArrayList не потокобезопасен. Результат -
+// потерянные элементы или исключение при записи
+List<Integer> unsafe = new ArrayList<>();
+IntStream.range(0, 100_000).parallel().forEach(unsafe::add);
+
+// ПРАВИЛЬНО: пусть поток соберёт результат сам
+List<Integer> safe = IntStream.range(0, 100_000)
+        .parallel().boxed().toList();
+
+// ОШИБКА: поток одноразовый. Второй вызов бросит
+// IllegalStateException; переиспользуют источник, а не поток
+Stream<String> stream = cities.stream();
+stream.forEach(System.out::println);
+stream.forEach(System.out::println);
+\end{minted}
+\caption{Ошибки параллельного и повторного использования потока}
+\label{lst:06-21}
+\end{listing}
+
+Одноразовость~--- прямое следствие природы потока: он ничего не хранит и лишь
+тянет элементы из источника; пройти по нему второй раз~--- всё равно что
+попросить конвейерную ленту прокрутить назад уже уехавшие яблоки. И совет
+напоследок: не ставьте \texttt{parallel()} «на всякий случай»~--- сначала
+напишите последовательную версию и измерьте время.
+
+\praktikum{}
+
+Понадобится JDK~17 или новее, установленный Maven и подключение к сети при
+первой сборке. База данных отдельной установки не требует: H2 подключается как
+обычная библиотека.
+
+\subsection*{Задание 1. Maven-проект и его зависимости}
+
+Создайте вручную, без помощи среды разработки, каталог \texttt{movie-app} со
+структурой из рис.~\ref{fig:06-1} и файлом \texttt{pom.xml} по образцу
+листинга~\ref{lst:06-1}, положите в \texttt{src/main/java/com/movies} класс
+\texttt{Main} и выполните по очереди команды из листинга~\ref{lst:06-2},
+записывая, что изменилось в каталоге \texttt{target} после каждой. Затем
+добавьте зависимость от \texttt{hibernate-core} версии 6.4.0.Final, выполните
+\texttt{mvn dependency:tree} и ответьте письменно, сколько у проекта прямых
+зависимостей и сколько транзитивных добавил Hibernate.
+
+\subsection*{Задание 2. CRUD через JDBC и паттерн DAO}
+
+Наберите программу из листинга~\ref{lst:06-4}, дополнив её вставкой четырёх
+фильмов, обновлением одного из них, удалением ещё одного и выводом всех
+оставшихся строк. Добавьте поиск по части названия запросом вида
+\texttt{SELECT * FROM movies WHERE LOWER(title) LIKE LOWER(?)} и объясните
+письменно, зачем в параметре нужны знаки процента по краям.
+
+Вторая часть~--- перенос SQL в отдельный слой. По образцу
+листинга~\ref{lst:06-6} напишите класс \texttt{Movie} (поля \texttt{id},
+\texttt{title}, \texttt{genre}, \texttt{year}), интерфейс \texttt{MovieDAO} с
+методами \texttt{insert}, \texttt{findById}, \texttt{findAll},
+\texttt{findByGenre}, \texttt{update}, \texttt{delete} и его реализацию на
+JDBC. Все методы обязаны использовать \texttt{PreparedStatement},
+\texttt{insert}~--- забирать сгенерированный ключ, а преобразование строки
+результата в объект должно быть вынесено в единственный приватный метод.
+Напишите класс-проверку, который подключается к базе
+\texttt{jdbc:h2:mem:movietest;DB\_CLOSE\_DELAY=-1}, вставляет четыре фильма и
+вызывает каждый метод DAO хотя бы один раз.
+
+\subsection*{Задание 3. Hibernate и Lombok}
+
+Создайте файл \texttt{src/main/resources/hibernate.cfg.xml} по
+листингу~\ref{lst:06-8} и перепишите класс \texttt{Movie} с аннотациями JPA по
+листингу~\ref{lst:06-7}. Воспроизведите операции из листинга~\ref{lst:06-9}:
+сохраните пять фильмов, найдите один по ключу, обновите год выхода запросом на
+HQL через \texttt{createMutationQuery}, удалите фильм и выведите все фильмы
+одного жанра; добавьте постраничный вывод методами \texttt{setFirstResult} и
+\texttt{setMaxResults}. Оставьте включённым \texttt{hibernate.show\_sql} и
+выпишите из консоли запросы, которые Hibernate сгенерировал за вас. Затем
+подключите Lombok зависимостью с областью видимости \texttt{provided} и
+перепишите \texttt{Movie} по листингу~\ref{lst:06-10}, не меняя ни строчки в
+использующей его программе.
+
+Ответьте письменно: чем HQL отличается от SQL; что произойдёт, если сменить
+\texttt{hbm2ddl.auto} со значения \texttt{create} на \texttt{validate};
+сколько строк исчезло из класса после подключения Lombok и почему конструктор
+без аргументов для JPA обязателен.
+
+\subsection*{Задание 4. Транзакции и уровни изоляции}
+
+Создайте таблицу
+\texttt{accounts (id INT PRIMARY KEY, owner VARCHAR(100), balance DECIMAL(10,2))}
+и заполните её несколькими счетами. Напишите метод перевода средств, который
+выключает автоматическую фиксацию, проверяет достаточность средств, списывает
+и зачисляет сумму, фиксирует транзакцию при успехе, откатывает её при ошибке
+или нехватке денег и восстанавливает исходный режим в блоке \texttt{finally}
+по образцу листинга~\ref{lst:06-11}. Убедитесь, что после неудачного перевода
+общая сумма на счетах не изменилась.
+
+Вторая часть~--- эксперимент с изоляцией. Откройте к одной базе два соединения
+и воспроизведите две аномалии из табл.~\ref{tab:06-4}. Для грязного чтения
+поставьте на втором соединении \texttt{TRANSACTION\_READ\_UNCOMMITTED}, в
+первом начните транзакцию, измените баланс и не фиксируйте её; прочитайте
+баланс вторым соединением, затем откатите первое и прочитайте снова. Для
+неповторяющегося чтения прочитайте баланс первым соединением, измените и
+зафиксируйте его вторым, прочитайте первым повторно~--- и повторите тот же
+сценарий на уровнях \texttt{TRANSACTION\_READ\_COMMITTED} и
+\texttt{TRANSACTION\_REPEATABLE\_READ}. Уровень задавайте до вызова
+\texttt{setAutoCommit(false)}, как в листинге~\ref{lst:06-12}. Ответьте
+письменно, какие значения вернули оба чтения в каждом сценарии и почему они
+различаются.
+
+\subsection*{Задание 5. Обработка данных через Stream API}
+
+Создайте класс \texttt{FilmStreams} с записью и списком фильмов из
+листинга~\ref{lst:06-22} и решите на нём восемь задач, каждую~--- одним
+конвейером, без единого цикла \texttt{for}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+record Film(String title, String genre, int year, double rating) {}
+
+static final List<Film> FILMS = List.of(
+    new Film("Матрица",       "Фантастика", 1999, 8.5),
+    new Film("Начало",        "Фантастика", 2010, 8.7),
+    new Film("Интерстеллар",  "Фантастика", 2014, 8.6),
+    new Film("Тёмный рыцарь", "Боевик",     2008, 9.0),
+    new Film("Джокер",        "Драма",      2019, 8.4),
+    new Film("Паразиты",      "Триллер",    2019, 8.5),
+    new Film("Зелёная миля",  "Драма",      1999, 9.1),
+    new Film("Мементо",       "Триллер",    2000, 8.4));
+\end{minted}
+\caption{Исходные данные для заданий по Stream API}
+\label{lst:06-22}
+\end{listing}
+
+Задачи такие: посчитать, сколько фильмов вышло до 2010~года; найти первый
+фильм с рейтингом выше 9,0 и напечатать «не найден», если такого нет;
+получить три самых свежих фильма; собрать все жанры без повторов по алфавиту;
+посчитать средний рейтинг по жанрам; собрать названия фильмов по жанрам;
+найти лучший фильм каждого жанра; разделить фильмы на вышедшие до 2010~года и
+позже. Отдельно выведите сводную статистику по годам через
+\texttt{summaryStatistics}. Затем свяжите обе половины занятия: возьмите
+список, который возвращает \texttt{findAll} из задания~2 или запрос на HQL из
+задания~3, и посчитайте по нему количество фильмов по жанрам и средний год
+выхода с обработкой случая пустого списка. Ответьте письменно: что напечатает
+конвейер, если убрать из него завершающий \texttt{toList()}; что вернёт
+\texttt{allMatch} на пустом списке и почему; какой тип \texttt{Map} возвращает
+\texttt{groupingBy} без третьего аргумента.
+
+\subsection*{Результаты занятия}
+
+По итогам занятия у вас должны быть готовы: проект \texttt{movie-app} с
+рабочим \texttt{pom.xml} и отчётом по дереву зависимостей; программа CRUD на
+чистом JDBC и комплект классов DAO; сущность с аннотациями JPA, файл
+\texttt{hibernate.cfg.xml} и программа с запросами на HQL; вариант сущности на
+Lombok; программа перевода средств и отчёт об эксперименте с уровнями
+изоляции; класс \texttt{FilmStreams} с решениями всех восьми задач и
+письменные ответы на вопросы заданий.
+
+\kontrolvoprosy
+
+\begin{enumerate}
+\item Что такое GAV-координаты и зачем система сборки требует их у каждого
+      проекта и каждой зависимости?
+\item Чем область видимости \texttt{compile} отличается от \texttt{test} и
+      \texttt{provided}? Приведите пример зависимости для каждой.
+\item Что такое транзитивные зависимости и почему они могут стать проблемой?
+\item Чем \texttt{PreparedStatement} отличается от \texttt{Statement} и
+      почему подстановка пользовательского ввода в текст запроса недопустима?
+\item Какие три выгоды даёт паттерн DAO? Почему метод поиска по ключу
+      возвращает \texttt{Optional}, а не саму сущность?
+\item Как соотносятся JPA и Hibernate? Чем \texttt{SessionFactory} отличается
+      от \texttt{Session}?
+\item Перечислите четыре состояния сущности. Почему изменение объекта после
+      закрытия сессии не попадает в базу?
+\item Что означают четыре буквы аббревиатуры ACID? Какое из свойств
+      разработчик настраивает сам?
+\item Назовите четыре аномалии параллельного выполнения. Какой уровень
+      изоляции запрещает каждую из первых трёх и почему четвёртая стоит
+      особняком?
+\item В чём разница между оптимистичной и пессимистичной блокировкой?
+\item Чем поток отличается от коллекции и почему по одному потоку нельзя
+      пройти дважды?
+\item Что такое ленивость промежуточных операций? Чем \texttt{map} отличается
+      от \texttt{flatMap}?
+\end{enumerate}
+
+\testzadaniya
+
+\begin{enumerate}
+
+\vopros{Что такое GAV-координаты в Maven?}
+  {\texttt{goal}, \texttt{action}, \texttt{value}~--- параметры плагина}
+  {\texttt{groupId}, \texttt{artifactId}, \texttt{version}~--- адрес артефакта}
+  {\texttt{git}, \texttt{archive}, \texttt{validate}~--- команды репозитория}
+  {\texttt{gradle}, \texttt{ant}, \texttt{version}~--- совместимость систем}
+
+\vopros{Что произойдёт при выполнении команды \texttt{mvn package}?}
+  {выполнится только упаковка в JAR, без компиляции и тестов}
+  {выполнятся \texttt{validate}, \texttt{compile}, \texttt{test} и \texttt{package}}
+  {артефакт будет опубликован в центральном репозитории}
+  {будут выполнены только \texttt{package} и \texttt{deploy}}
+
+\vopros{Какая область видимости нужна библиотеке, которая используется только
+        в тестах и не должна попасть в готовый JAR?}
+  {\texttt{compile}}
+  {\texttt{provided}}
+  {\texttt{runtime}}
+  {\texttt{test}}
+
+\vopros{Чем \texttt{PreparedStatement} отличается от \texttt{Statement}?}
+  {работает только с запросами \texttt{SELECT}}
+  {не поддерживает параметры, зато выполняется быстрее}
+  {выполняет запрос, не открывая соединения с базой}
+  {отправляет шаблон и параметры отдельно, чем защищает от инъекции}
+
+\vopros{Как соотносятся Hibernate и JPA?}
+  {Hibernate~--- реализация спецификации JPA}
+  {JPA~--- реализация Hibernate}
+  {это два названия одного и того же продукта}
+  {JPA пришёл на смену Hibernate и заменил его}
+
+\vopros{Чем \texttt{SessionFactory} отличается от \texttt{Session}?}
+  {оба объекта создаются заново на каждую операцию с базой}
+  {\texttt{SessionFactory} создаётся на каждую операцию, \texttt{Session}~--- один раз}
+  {разницы нет, это синонимы}
+  {\texttt{SessionFactory} тяжёлый и создаётся один раз, \texttt{Session}~--- лёгкий, на единицу работы}
+
+\vopros{Почему конструктор без аргументов обязателен для JPA-сущности?}
+  {язык Java требует его от любого класса}
+  {без него не компилируется аннотация \texttt{@Entity}}
+  {без него сущность не попадёт в файл конфигурации}
+  {Hibernate создаёт объект рефлексией до того, как заполнит поля}
+
+\vopros{Что гарантирует свойство атомарности транзакции?}
+  {операции выполнятся все либо ни одна}
+  {параллельные транзакции не увидят работу друг друга}
+  {данные переживут отключение питания}
+  {запросы будут выполнены в порядке их отправки}
+
+\vopros{Какой минимальный уровень изоляции гарантирует, что повторное чтение
+        одной строки внутри транзакции вернёт то же значение?}
+  {\eng{READ UNCOMMITTED}}
+  {\eng{READ COMMITTED}}
+  {\eng{REPEATABLE READ}}
+  {\eng{SERIALIZABLE}}
+
+\vopros{Что делает аннотация \texttt{@Version} в сущности Hibernate?}
+  {хранит номер версии схемы базы для миграций}
+  {включает оптимистичную блокировку: версия попадает в условие \texttt{UPDATE}}
+  {включает пессимистичную блокировку строки при чтении}
+  {задаёт версию Hibernate, с которой совместим класс}
+
+\vopros{Что напечатает конвейер из \texttt{peek} и \texttt{filter}, у которого
+        нет терминальной операции?}
+  {ничего: без терминальной операции конвейер не запускается}
+  {все элементы источника}
+  {только первый элемент источника}
+  {код не скомпилируется}
+
+\vopros{Что окажется в списке после применения \texttt{flatMap(List::stream)} к
+        потоку из списков \texttt{[Анна, Борис]} и \texttt{[Вера]}?}
+  {\texttt{[Анна, Борис, Вера]}}
+  {вложенность сохранится: \texttt{[[Анна, Борис], [Вера]]}}
+  {по первому элементу каждого списка: \texttt{[Анна, Вера]}}
+  {пустой список}
+
+\vopros{Что вернёт \texttt{allMatch} на пустом потоке?}
+  {\texttt{true}}
+  {\texttt{false}}
+  {исключение \texttt{NoSuchElementException}}
+  {\texttt{Optional.empty()}}
+
+\end{enumerate}

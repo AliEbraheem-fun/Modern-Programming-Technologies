@@ -1,0 +1,18 @@
+classDiagram
+    class Shape {
+        <<sealed>>
+        permits Circle, Rectangle, Triangle
+    }
+    class Circle {
+        <<record, final>>
+    }
+    class Rectangle {
+        <<record, final>>
+    }
+    class Triangle {
+        <<non-sealed>>
+    }
+    note for Triangle "non-sealed — можно наследовать дальше, без ограничений"
+    Shape <|-- Circle
+    Shape <|-- Rectangle
+    Shape <|-- Triangle

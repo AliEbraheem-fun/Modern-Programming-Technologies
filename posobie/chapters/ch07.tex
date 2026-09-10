@@ -1,0 +1,1048 @@
+\chapter{Фреймворк Spring}
+\label{ch:07}
+
+В предыдущей главе мы научились собирать проект системами Maven и Gradle и
+разговаривать с базой данных через JDBC и Hibernate. Но стоит соединить эти
+части в настоящее веб-приложение~--- с контроллерами, сервисами, формой входа
+и REST API,~--- как выясняется, что «склеивать» компоненты вручную крайне
+неудобно. Эту инфраструктурную работу берёт на себя \term{Spring}~--- де-факто
+стандарт корпоративной разработки на Java. Прочитав главу, вы разберётесь в
+инверсии управления и внедрении зависимостей, научитесь описывать бины,
+соберёте приложение со слоями «контроллер~--- сервис~--- репозиторий»,
+отдадите данные через REST API и HTML-страницы, закроете его аутентификацией
+и доведёте до состояния, пригодного для эксплуатации.
+
+\section{Инверсия управления и внедрение зависимостей}
+
+Представьте класс \texttt{StudentService}, который сохраняет студентов в базу.
+Ему нужен \texttt{StudentRepository}, репозиторию~--- источник данных, а
+источнику~--- адрес базы, логин и пароль. В классическом подходе сервис
+добывает всё это сам: в его конструкторе стоят вызовы \texttt{new}, а имя
+конкретного класса репозитория вписано намертво. Такой код порождает четыре
+беды сразу: \emph{жёсткую связность}~--- заменить реализацию нельзя, не
+переписав конструктор; \emph{нулевую тестируемость}~--- репозиторий не
+подменить заглушкой, и тест полезет в настоящую базу; \emph{дублирование}~---
+источник данных создаётся заново в каждом сервисе; \emph{ручной жизненный
+цикл}~--- соединения и пулы вы обязаны закрывать сами.
+
+\term{Инверсия управления} (\eng{Inversion of Control, IoC})~--- принцип
+проектирования, при котором создание объектов, их связывание и управление
+жизненным циклом передаются внешнему контейнеру. Формулируют его
+«голливудским принципом»: «не звоните нам~--- мы сами вам позвоним». Бытовая
+аналогия~--- ресторан: вы не идёте на кухню за кастрюлей и не ищете, где растёт
+картофель, а говорите, что хотите получить. \term{Внедрение зависимостей}
+(\eng{Dependency Injection, DI})~--- техника реализации IoC: объект не создаёт
+свои зависимости, а получает их извне готовыми. Способов три, и все они
+собраны в листинге~\ref{lst:07-1}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Service                    // 1. Через конструктор - рекомендуется
+public class StudentService {
+    private final StudentRepository repository;
+
+    // Spring сам создаст репозиторий и передаст его сюда
+    public StudentService(StudentRepository repository) {
+        this.repository = repository;
+    }
+}
+
+@Service                    // 2. Через сеттер
+public class SetterDemo {
+    private StudentRepository repository;
+
+    @Autowired
+    public void setRepository(StudentRepository repo) {
+        this.repository = repo;
+    }
+}
+
+@Service                    // 3. Через поле - не рекомендуется
+public class FieldDemo {
+    @Autowired
+    private StudentRepository repository;
+}
+\end{minted}
+\caption{Три способа внедрения зависимости}
+\label{lst:07-1}
+\end{listing}
+
+Предпочтительно \term{конструкторное внедрение}. Только оно позволяет объявить
+поле \texttt{final}, то есть гарантировать, что зависимость задана один раз;
+если подходящего бина нет, приложение не поднимется вовсе~--- ошибка вылезет
+при старте, а не через неделю в работающем сервисе; наконец, такой класс
+тестируется без всякого Spring. Сеттер оставляют для необязательных
+зависимостей. Внедрение в поле выглядит короче всех и именно поэтому опасно:
+зависимости не видны в сигнатуре класса, а подставить заглушку без рефлексии
+невозможно.
+
+\section{Spring Framework и Spring Boot}
+
+\term{Spring Framework}~--- универсальный фреймворк с открытым исходным кодом
+для платформы Java, созданный, чтобы упростить разработку корпоративных
+приложений: он управляет объектами, транзакциями и конфигурацией, а в основе
+лежат IoC и DI. Важная черта Spring~--- ненавязчивость: он работает с обычными
+Java-объектами и не требует наследоваться от специальных классов.
+\term{Spring Boot}~--- надстройка над ним, позволяющая писать самодостаточные
+приложения без единой строчки XML-конфигурации. Держится она на трёх китах.
+\term{Автоконфигурация}: Spring осматривает classpath и сам подбирает разумные
+настройки~--- увидел драйвер H2, значит, настроил источник данных.
+\term{Встроенный сервер} (Tomcat, Jetty или Undertow): приложение запускается
+обычным методом \texttt{main}. \term{Starter-модули}: одна зависимость
+подключает набор согласованных библиотек.
+
+Всё приложение Spring Boot умещается в шесть строк
+(листинг~\ref{lst:07-2})~--- дальше остаётся только добавлять компоненты.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@SpringBootApplication
+public class StudentApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(StudentApplication.class, args);
+    }
+}
+\end{minted}
+\caption{Минимальное приложение Spring Boot}
+\label{lst:07-2}
+\end{listing}
+
+Аннотация \texttt{@SpringBootApplication}~--- это «всё в одном»: она объединяет
+\texttt{@Configuration} (класс может объявлять бины),
+\texttt{@EnableAutoConfiguration} (включает автоконфигурацию) и
+\texttt{@ComponentScan} (велит искать компоненты в этом пакете и всех
+вложенных). Отсюда правило: главный класс кладут в корневой пакет проекта,
+иначе часть классов останется вне сканирования. Заготовку проекта создают в
+\term{Spring Initializr}~--- веб-сервисе по адресу
+\texttt{start.spring.io}: там выбирают систему сборки, язык, версии и
+зависимости. Самые нужные стартеры перечислены в табл.~\ref{tab:07-1}; полное
+имя каждого начинается с \texttt{spring-boot-}. Подключают их как обычные
+зависимости Maven, причём без указания версий~--- версии задаёт родительский
+модуль \texttt{spring-boot-starter-parent}, и потому библиотеки не
+конфликтуют.
+
+\begin{table}[htbp]
+\caption{Основные starter-модули Spring Boot}
+\label{tab:07-1}
+\centering
+\begin{tabular}{L{5.4cm}L{9.4cm}}
+\toprule
+Стартер & Что подключает \\
+\midrule
+\texttt{starter-web} & Spring MVC и встроенный Tomcat \\
+\texttt{starter-data-jpa} & работу с базой через JPA и Hibernate \\
+\texttt{starter-security} & аутентификацию и авторизацию \\
+\texttt{starter-thymeleaf} & HTML-шаблоны Thymeleaf \\
+\texttt{starter-validation} & проверку данных (Hibernate Validator) \\
+\texttt{starter-aop} & аспектно-ориентированное программирование \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Как это выглядит в файле \texttt{pom.xml}, показывает
+листинг~\ref{lst:07-3}; остальные стартеры подключаются так же, меняется
+только \texttt{artifactId}.
+
+\begin{listing}[H]
+\begin{minted}{xml}
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.4</version>
+</parent>
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+</dependencies>
+\end{minted}
+\caption{Описание проекта в файле pom.xml}
+\label{lst:07-3}
+\end{listing}
+
+Настройки приложения хранятся в файле \texttt{application.properties} из
+каталога \texttt{src/main/resources}. Набор для учебного проекта приведён в
+листинге~\ref{lst:07-4}: база H2 живёт в оперативной памяти и
+исчезает после остановки приложения, а Hibernate сам создаёт под сущности
+таблицы.
+
+\begin{listing}[H]
+\begin{minted}{text}
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.username=sa
+spring.datasource.password=
+# none / validate / update / create / create-drop
+spring.jpa.hibernate.ddl-auto=update
+# веб-консоль H2 открывается по пути /h2-console
+spring.h2.console.enabled=true
+spring.thymeleaf.cache=false
+\end{minted}
+\caption{Файл application.properties}
+\label{lst:07-4}
+\end{listing}
+
+\section{Контейнер IoC и бины}
+
+\term{Контейнер IoC}~--- ядро Spring: он создаёт объекты по метаданным
+конфигурации, внедряет зависимости и управляет их жизненным циклом. Хранит
+контейнер не сами объекты, а их описания~--- структуры
+\texttt{BeanDefinition} с классом, зависимостями, областью видимости и
+методами инициализации. Базовая форма контейнера~---
+интерфейс \texttt{BeanFactory}, но на практике берут его наследника
+\texttt{ApplicationContext}: тот добавляет интернационализацию, события, работу
+с ресурсами и интеграцию со Spring AOP. В приложении Spring Boot контекст
+создаётся вызовом \texttt{SpringApplication.run}.
+
+\term{Бин} (\eng{bean})~--- объект, который создаёт, настраивает и хранит
+контейнер. Живёт он по одному сценарию: контейнер читает конфигурацию и строит
+\texttt{BeanDefinition}; создаёт экземпляр; внедряет в него зависимости;
+вызывает метод инициализации (\texttt{@PostConstruct} или
+\texttt{init-method}); выдаёт бин по запросу; при закрытии контекста вызывает
+\texttt{@PreDestroy}. Запомните порядок двух средних шагов: сначала
+объект создаётся и только потом получает зависимости, поэтому в конструкторе
+нельзя рассчитывать на поля, внедряемые сеттером.
+
+Сколько экземпляров бина создаст контейнер и как долго они проживут, задаёт
+\term{область видимости} (\eng{scope}); варианты перечислены в
+табл.~\ref{tab:07-2}. По умолчанию действует \texttt{singleton}, и это стоит
+помнить: единственный экземпляр сервиса обслуживает все запросы одновременно,
+поэтому изменяемых полей в нём быть не должно.
+
+\begin{table}[htbp]
+\caption{Области видимости бинов}
+\label{tab:07-2}
+\centering
+\begin{tabular}{L{4.0cm}L{10.8cm}}
+\toprule
+Область & Сколько экземпляров \\
+\midrule
+\texttt{singleton} & один на весь контейнер (по умолчанию) \\
+\texttt{prototype} & новый на каждое обращение к контейнеру \\
+\texttt{request} & один на HTTP-запрос (только веб-приложения) \\
+\texttt{session} & один на HTTP-сессию (только веб-приложения) \\
+\texttt{application} & один на контекст сервлетов (только веб) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Объявить бин можно тремя путями. Первый и самый частый~--- \term{стереотипные
+аннотации} на классе: контейнер находит их при сканировании пакетов и
+регистрирует класс сам. Второй~--- \term{фабричный метод} с аннотацией
+\texttt{@Bean} внутри класса с \texttt{@Configuration}. Оба показаны в
+листинге~\ref{lst:07-5}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Component  public class MyComponent { }        // общая
+@Service    public class StudentService { }     // логика
+@Repository public class StudentRepository { }  // данные
+@Controller public class StudentController { }  // MVC
+
+@Configuration
+public class AppConfig {
+    // Контейнер сам вызовет метод и зарегистрирует бин
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+\end{minted}
+\caption{Стереотипные аннотации и фабричный метод}
+\label{lst:07-5}
+\end{listing}
+
+Все четыре стереотипа~--- специализации \texttt{@Component}. Для контейнера они
+почти равнозначны, но несут смысл для читателя кода, а \texttt{@Repository}
+вдобавок переводит исключения конкретной СУБД в единую иерархию
+\texttt{DataAccessException}. Фабричный же метод нужен потому, что пометить
+\texttt{@Component} можно только свой класс: если бин делают из класса чужой
+библиотеки, метод соберёт объект «под капотом» и вручит контейнеру готовый
+результат. Третий путь~--- описание бинов в XML-файле
+(обычно \texttt{beans.xml}), который встречается в старом коде. Каждый бин там
+объявляется элементом
+\texttt{<bean>}; вложенный \texttt{<constructor-arg ref="..."/>} передаёт в
+конструктор другой бин, а \texttt{<property name="..." value="..."/>}~---
+значение через сеттер. Загружают такой контекст строкой
+\texttt{new ClassPathXmlApplicationContext("beans.xml")}.
+
+\begin{oshibka}
+\textbf{Частая ошибка: две реализации одного интерфейса.} Если пометить
+\texttt{@Service} два класса, реализующих \texttt{GreetingService}, контейнер
+при внедрении не поймёт, какой из них взять, и приложение упадёт на старте с
+\texttt{NoUniqueBeanDefinitionException}. Лечится это тремя способами: пометить
+предпочтительную реализацию \texttt{@Primary}, указать нужную по имени через
+\texttt{@Qualifier} или внедрить сразу \texttt{List<GreetingService>}~---
+контейнер соберёт в список все реализации.
+\end{oshibka}
+
+\section{Аспектно-ориентированное программирование}
+
+Логирование, замер времени, проверка прав, открытие транзакции~--- всё это
+нужно во множестве методов и не относится ни к одному из них по существу.
+Такую функциональность называют \term{сквозной}, и если писать её руками, она
+расползётся копиями по всему проекту.
+\term{Аспектно-ориентированное программирование} (\eng{Aspect-Oriented
+Programming, AOP})~--- парадигма, которая выносит сквозную функциональность в
+отдельные модули~--- \term{аспекты}. Понятий здесь четыре. \term{Аспект}
+(\eng{aspect})~--- класс с дополнительной логикой. \term{Точка соединения}
+(\eng{join point})~--- место в выполнении программы, куда можно «врезаться»; в
+Spring это всегда вызов метода. \term{Срез} (\eng{pointcut})~--- выражение,
+отбирающее нужные точки соединения. \term{Совет} (\eng{advice})~--- код,
+который выполняется в отобранной точке. Аналогия~--- турникет в метро: он
+ничего не знает о том, куда вы едете, но срабатывает на каждом входе.
+
+Аспект из листинга~\ref{lst:07-6} печатает имя каждого вызванного метода из
+пакета \texttt{service}. Строка в скобках после \texttt{@Before}~--- это и есть
+срез: звёздочки означают «любой тип результата», «любой класс пакета» и «любой
+метод», а \texttt{(..)}~--- «с любыми параметрами». Парная аннотация
+\texttt{@AfterReturning} даёт доступ к тому, что метод вернул.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Aspect
+@Component
+public class LoggingAspect {
+
+    @Before("execution(* com.example.service.*.*(..))")
+    public void logBefore(JoinPoint jp) {
+        System.out.println("Вызов: "
+                + jp.getSignature().getName());
+    }
+}
+\end{minted}
+\caption{Аспект, логирующий вызовы сервисов}
+\label{lst:07-6}
+\end{listing}
+
+Работает это через \term{прокси}: контейнер подменяет ваш бин
+объектом-двойником с тем же интерфейсом, который сначала выполняет совет, а
+потом передаёт вызов настоящему объекту. На том же механизме построены
+\texttt{@Transactional}, \texttt{@PreAuthorize} и \texttt{@Cacheable}~--- то
+есть, изучив AOP, вы понимаете половину «магии» Spring. Полноценная
+альтернатива~--- AspectJ: эта библиотека правит байт-код при компиляции и не
+ограничена вызовами методов.
+
+\section{Spring MVC и слои приложения}
+
+\term{Spring MVC}~--- реализация паттерна \term{Модель~--- Представление~---
+Контроллер} (\eng{Model~--- View~--- Controller}). \emph{Модель}~---
+бизнес-данные и логика; \emph{представление}~--- то, что видит пользователь:
+HTML-страница или ответ в формате JSON; \emph{контроллер} принимает
+HTTP-запрос, вызывает нужные сервисы и решает, что вернуть. На практике
+приложение делят на три слоя, и запрос проходит их насквозь
+(рис.~\ref{fig:07-1}). Правило простое: контроллер не лезет в базу, а
+репозиторий ничего не знает про HTTP. Каждый слой заменяем независимо, и
+именно поэтому веб-интерфейс приделывается к готовой бизнес-логике за час.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[font=\small,node distance=4mm]
+\node[boxw=16mm] (a){HTTP-\\запрос};
+\node[boxw=33mm,right=of a] (b){\texttt{@RestController}\\[1pt]
+  \scriptsize приём и разбор};
+\node[boxw=22mm,right=of b] (c){\texttt{@Service}\\[1pt]
+  \scriptsize бизнес-логика};
+\node[boxw=27mm,right=of c] (d){\texttt{@Repository}\\[1pt]
+  \scriptsize доступ к данным};
+\node[boxw=16mm,right=of d] (e){база\\данных};
+\draw[flowarrow] (a)--(b);\draw[flowarrow] (b)--(c);
+\draw[flowarrow] (c)--(d);\draw[flowarrow] (d)--(e);
+\end{tikzpicture}
+\caption{Прохождение запроса по слоям приложения}\label{fig:07-1}
+\end{figure}
+
+Сквозной пример главы~--- сущность \texttt{Student} из
+листинга~\ref{lst:07-7}: её мы отдадим через REST, покажем на HTML-странице и
+сохраним в базу. Аннотации JPA знакомы по предыдущей главе.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Entity
+@Table(name = "students")
+public class Student {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+    @Column(nullable = false, length = 100)
+    private String surname;
+
+    public Student() {}          // нужен Hibernate
+
+    public Student(String name, String surname) {
+        this.name = name;
+        this.surname = surname;
+    }
+    // ... геттеры и сеттеры для всех полей
+}
+\end{minted}
+\caption{Сущность Student}
+\label{lst:07-7}
+\end{listing}
+
+Контроллеры бывают двух видов. Класс с \texttt{@Controller} возвращает
+\emph{представление}: строка, которую вернул метод, воспринимается механизмом
+\texttt{ViewResolver} как имя шаблона~--- \texttt{"students"} означает файл
+\texttt{templates/students.html}. Класс с \texttt{@RestController}~--- это
+\texttt{@Controller} плюс \texttt{@ResponseBody} на всех методах: возвращённый
+объект сериализуется в JSON и уходит прямо в тело ответа. Первый вид нужен для
+страниц, второй~--- для REST API.
+
+Какой метод вызвать, контейнер решает по аннотациям сопоставления: общей
+\texttt{@RequestMapping} или её сокращениям \texttt{@GetMapping},
+\texttt{@PostMapping}, \texttt{@PutMapping}, \texttt{@DeleteMapping}; в
+шаблонах путей звёздочка заменяет один сегмент, а две~--- любую вложенность
+(\texttt{/admin/**}). Данные из запроса попадают в параметры метода четырьмя
+аннотациями: \texttt{@PathVariable} берёт значение из пути,
+\texttt{@RequestParam}~--- из строки запроса, \texttt{@RequestBody}
+десериализует тело запроса (обычно JSON) в Java-объект, а
+\texttt{@ModelAttribute} собирает объект из полей отправленной
+HTML-формы. Первые три собраны в контроллере из
+листинга~\ref{lst:07-8}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@RestController
+@RequestMapping("/api/students")
+public class StudentRestController {
+
+    // ... поле service и внедрение через конструктор
+
+    @GetMapping
+    public List<Student> getAll() {
+        return service.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Student> getById(@PathVariable Long id) {
+        Student s = service.findById(id);
+        return s != null ? ResponseEntity.ok(s)
+                         : ResponseEntity.notFound().build();
+    }
+
+    @PostMapping
+    public ResponseEntity<Student> create(@RequestBody Student s) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                             .body(service.save(s));
+    }
+}
+\end{minted}
+\caption{REST-контроллер с операциями над сущностью}
+\label{lst:07-8}
+\end{listing}
+
+Класс \texttt{ResponseEntity}~--- обёртка над HTTP-ответом: он задаёт не
+только тело, но и код состояния с заголовками. Соблюдайте принятые коды:
+создание~--- 201~Created, удаление без тела ответа~--- 204~No~Content,
+отсутствие ресурса~--- 404~Not~Found. Сам по себе Spring не возвращает 404,
+когда метод отдал \texttt{null},~--- об этом заботится разработчик.
+
+Ниже контроллера лежит сервис (класс с \texttt{@Service} и бизнес-логикой), а
+ниже~--- репозиторий, и здесь Spring Data JPA избавляет от почти всей рутины:
+реализацию писать не нужно, достаточно объявить интерфейс
+(листинг~\ref{lst:07-9}). \texttt{CrudRepository<T, ID>} даёт методы
+\texttt{save}, \texttt{findById}, \texttt{findAll}, \texttt{deleteById} и
+\texttt{count}; \texttt{JpaRepository<T, ID>} добавляет сортировку,
+постраничный вывод и пакетные операции.
+
+\begin{listing}[H]
+\begin{minted}{java}
+public interface StudentRepository
+        extends JpaRepository<Student, Long> {
+
+    // Реализацию Spring Data напишет сама по имени метода
+    List<Student> findByNameContainingIgnoreCase(String part);
+}
+\end{minted}
+\caption{Репозиторий Spring Data JPA}
+\label{lst:07-9}
+\end{listing}
+
+Метод \texttt{findByNameContainingIgnoreCase} нигде не реализован, и всё же он
+работает: Spring Data разбирает имя метода по словам. Приставка
+\texttt{findBy} означает выборку, \texttt{Name}~--- поле сущности,
+\texttt{Containing}~--- поиск подстроки, \texttt{IgnoreCase}~--- без учёта
+регистра. У правила есть обратная сторона: опечатка в имени поля обнаружится
+не при компиляции, а при запуске приложения.
+
+\section{Шаблонизатор Thymeleaf}
+
+\term{Шаблонизатор}~--- программа, которая собирает документ из шаблона и
+данных, отделяя структуру страницы от содержимого. \term{Thymeleaf}~---
+современный серверный шаблонизатор для Java; его главная черта~---
+\term{естественные шаблоны} (\eng{natural templates}): файл остаётся
+корректным HTML, его можно открыть в браузере и увидеть вёрстку с
+подставленными для примера значениями. Шаблоны кладут
+в каталог \texttt{src/main/resources/templates}, статические файлы~--- в
+\texttt{src/main/resources/static}. Данные контроллер передаёт через объект
+\texttt{Model}: вызов \texttt{model.addAttribute("students", list)} кладёт
+список под именем \texttt{students}, а возвращённое имя \texttt{"students"}
+указывает на файл \texttt{students.html}. Все атрибуты Thymeleaf начинаются с
+префикса \texttt{th:}~--- они читают значение из модели и подставляют его в
+обычный HTML-тег (листинг~\ref{lst:07-10}). Обратите внимание на текст внутри
+тегов~--- «Заголовок», «Имя»: он виден дизайнеру при открытии файла и
+замещается данными при работе приложения.
+
+\begin{listing}[H]
+\begin{minted}{html}
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<h1 th:text="${title}">Заголовок</h1>
+
+<table>
+    <tr th:each="s : ${students}">
+        <td th:text="${s.name}">Имя</td>
+        <td><a th:href="@{/students/delete/{id}(id=${s.id})}">
+            Удалить</a></td>
+    </tr>
+</table>
+
+<form th:action="@{/students/save}" th:object="${student}"
+      method="post">
+    <input type="text" th:field="*{name}"/>
+    <button type="submit">Сохранить</button>
+</form>
+
+</body>
+</html>
+\end{minted}
+\caption{Шаблон Thymeleaf: вывод, цикл, ссылка и форма}
+\label{lst:07-10}
+\end{listing}
+
+Атрибут \texttt{th:text} заменяет содержимое тега значением выражения,
+\texttt{th:each} повторяет тег для каждого элемента коллекции, а
+\texttt{th:href} с записью \texttt{@\{...\}} строит адрес. Форму связывает с
+объектом пара атрибутов: \texttt{th:object} называет объект модели, а
+\texttt{th:field} со звёздочкой~--- его поле; Spring при отправке формы соберёт
+из них объект обратно.
+
+\begin{vrezka}
+\textbf{Почему после сохранения нужен redirect.} Метод, обрабатывающий
+отправку формы, возвращает не имя шаблона, а строку
+\texttt{"redirect:/students"}: браузер переходит по адресу заново, и
+обновление страницы клавишей F5 больше не отправляет форму повторно~---
+иначе один и тот же студент добавлялся бы при каждом нажатии.
+\end{vrezka}
+
+\section{Spring Security}
+
+\term{Spring Security}~--- фреймворк, отвечающий за \term{аутентификацию}
+(\eng{authentication}, «кто вы такой») и \term{авторизацию}
+(\eng{authorization}, «что вам разрешено»), а заодно закрывающий типовые
+уязвимости веб-приложений. Работает он через \term{цепочку фильтров}
+(\texttt{SecurityFilterChain}): каждый входящий запрос по очереди проходит
+фильтры, которые определяют пользователя, проверяют его права и отсекают
+подделку запросов. Настраивают её, объявив бин
+\texttt{SecurityFilterChain} (листинг~\ref{lst:07-11}). Читается конфигурация
+сверху вниз, и первое подошедшее правило выигрывает~--- поэтому частные пути
+пишут раньше общих, а \texttt{anyRequest} всегда идёт последним.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Configuration
+@EnableMethodSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http)
+            throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login").permitAll()
+                .requestMatchers("/api/students")
+                    .hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/students/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form.permitAll())
+            .httpBasic(Customizer.withDefaults())
+            .csrf(AbstractHttpConfigurer::disable);
+
+        return http.build();
+    }
+}
+\end{minted}
+\caption{Конфигурация Spring Security}
+\label{lst:07-11}
+\end{listing}
+
+Бин \texttt{PasswordEncoder} из листинга~\ref{lst:07-5} обязателен и здесь:
+пароли в базе хранят только в виде хеша. Алгоритм BCrypt добавляет к паролю случайную «соль» и намеренно считает
+хеш медленно, из-за чего перебор становится невыгодным, а восстановить
+исходный пароль из хеша нельзя вовсе. Откуда брать пользователей, Spring
+Security узнаёт через интерфейс \texttt{UserDetailsService} с методом
+\texttt{loadUserByUsername}: в учебном проекте его роль играет
+\texttt{InMemoryUserDetailsManager}, в настоящем~--- ваша реализация, читающая
+пользователя из базы. Учебные учётные записи объявляет ещё один бин того же
+класса \texttt{SecurityConfig} (листинг~\ref{lst:07-12}); пароль и здесь
+хранится не текстом, а результатом \texttt{encoder.encode}.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Bean
+public UserDetailsService users(PasswordEncoder encoder) {
+    UserDetails user = User.withUsername("user")
+        .password(encoder.encode("password"))
+        .roles("USER").build();
+    UserDetails admin = User.withUsername("admin")
+        .password(encoder.encode("password"))
+        .roles("ADMIN").build();
+    return new InMemoryUserDetailsManager(user, admin);
+}
+\end{minted}
+\caption{Два пользователя в памяти приложения}
+\label{lst:07-12}
+\end{listing}
+
+Два способа входа в конфигурации стоит различать. Вызов
+\texttt{formLogin} рисует HTML-форму и рассчитан на браузер, а
+\texttt{httpBasic}~--- на программы: клиент передаёт имя и пароль прямо в
+заголовке запроса. Без \texttt{httpBasic} тот же \texttt{curl} вместо
+данных получит переадресацию на форму входа, поэтому для REST API эту
+строку не пропускают. Ограничивать доступ можно и по методам: аннотация
+\texttt{@PreAuthorize("hasRole('ADMIN')")} проверяет выражение до вызова.
+Правила цепочки и правила на методах дополняют друг друга, поэтому итог
+определяет более строгая из них.
+
+Для REST API вход по форме и хранение сессии неудобны: у клиента может не
+быть браузера, а сервер приходится заставлять помнить всех вошедших.
+Стандартное решение~--- \term{JWT} (\eng{JSON Web Token}): компактный
+самодостаточный токен с именем пользователя, сроком действия и подписью
+сервера. Работает он так: клиент отправляет логин и пароль на
+\texttt{POST /api/auth/login}; сервер возвращает подписанный секретным ключом
+токен; клиент добавляет к каждому запросу заголовок \texttt{Authorization} со
+значением \texttt{Bearer} и самим токеном; отдельный фильтр в цепочке
+проверяет подпись и срок годности. Обратите внимание: сервер не хранит
+выданный токен~--- он лишь проверяет подпись, и подделать токен, не зная
+ключа, невозможно.
+
+\begin{oshibka}
+\textbf{Секретный ключ в исходном коде.} Ключ подписи нельзя записывать
+строковой константой в классе: любой, кто получит доступ к репозиторию, сможет
+выпускать токены от имени администратора. Ключ хранят в переменной окружения
+или в защищённом хранилище и подставляют в приложение при запуске.
+\end{oshibka}
+
+\section{Готовность к эксплуатации}
+
+Всё, что было выше,~--- фундамент. Ниже~--- четыре техники, без которых
+сервис не пускают в эксплуатацию.
+
+\subsection{Проверка входных данных}
+
+Контроллер~--- граница доверия: всё, что пришло снаружи, нужно проверить, иначе
+в базу попадут пустые строки, отрицательные возрасты и несуществующие адреса
+почты. Стандарт \term{Bean Validation} описывает проверки аннотациями
+(табл.~\ref{tab:07-3}); реализует их Hibernate Validator.
+
+\begin{table}[htbp]
+\caption{Основные аннотации Bean Validation}
+\label{tab:07-3}
+\centering
+\begin{tabular}{L{3.2cm}L{4.2cm}L{7.2cm}}
+\toprule
+Аннотация & Применяется к & Что проверяет \\
+\midrule
+\texttt{@NotNull} & любому типу & значение не \texttt{null} \\
+\texttt{@NotBlank} & строке & не \texttt{null}, не пустая, не пробелы \\
+\texttt{@Size} & строке, коллекции & длина в границах от \texttt{min} до
+  \texttt{max} \\
+\texttt{@Min}, \texttt{@Max} & числам & значение в границах \\
+\texttt{@Email} & строке & корректный адрес почты \\
+\texttt{@Valid} & вложенному объекту & запускает проверку внутри него \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Запомните главное: сами по себе аннотации на классе ничего не делают. Проверку
+запускает \texttt{@Valid} на параметре метода контроллера, и происходит это
+\emph{до} входа в метод~--- при неудаче Spring бросает
+\texttt{MethodArgumentNotValidException}, а тело метода даже не начинает
+выполняться.
+
+\subsection{Разделение сущностей и объектов передачи}
+
+В учебных примерах удобно возвращать из контроллера сущность \texttt{@Entity}
+напрямую. В настоящем проекте это порождает четыре проблемы: \emph{утечку
+внутреннего состояния}~--- поля \texttt{password} или \texttt{deleted} уходят
+клиенту; \texttt{LazyInitializationException}~--- сериализация разворачивает
+ленивую связь вне транзакции, и приложение падает; \emph{сцепление API и
+базы}~--- переименовали поле в сущности, сломали всех клиентов;
+\emph{циклические ссылки}~--- связь «студент~--- группа~--- список студентов»
+разворачивается в бесконечный JSON. Решение~--- \term{объект передачи данных}
+(\eng{Data Transfer Object, DTO}): отдельные классы для границ API, свои для
+входящих данных и для исходящих. Записывают их через \texttt{record}
+(листинг~\ref{lst:07-13}).
+
+\begin{listing}[H]
+\begin{minted}{java}
+// Приходит от клиента и проверяется
+public record StudentRequest(
+    @NotBlank(message = "Имя обязательно")
+    @Size(min = 2, max = 100)
+    String name,
+
+    @NotBlank String surname
+) {}
+
+// Уходит клиенту: только разрешённые поля
+public record StudentResponse(Long id, String name,
+                              String surname) {}
+
+@Component
+public class StudentMapper {
+
+    // Обратный метод toEntity(StudentRequest) устроен так же
+    public StudentResponse toResponse(Student s) {
+        return new StudentResponse(
+            s.getId(), s.getName(), s.getSurname());
+    }
+}
+\end{minted}
+\caption{Объекты передачи данных и преобразователь}
+\label{lst:07-13}
+\end{listing}
+
+Контроллер после этого работает только с объектами передачи: принимает
+\texttt{@Valid @RequestBody StudentRequest}, отдаёт \texttt{StudentResponse}, а
+превращением занимается \texttt{StudentMapper}. Писать его руками не
+обязательно: библиотека MapStruct сгенерирует преобразователь по интерфейсу
+при компиляции.
+
+\subsection{Единая обработка ошибок}
+
+Когда проверка не прошла, клиент по умолчанию получает ответ 400 без единого
+намёка на то, какое поле сломалось. Исправляет это глобальный перехватчик:
+класс с аннотацией \texttt{@RestControllerAdvice} (то есть
+\texttt{@ControllerAdvice} плюс \texttt{@ResponseBody}) собирает у себя
+обработчики исключений для всех контроллеров сразу. Пример~---
+листинг~\ref{lst:07-14}; заметьте, что формат ответа один на все случаи, а
+поле \texttt{fieldErrors} заполняется только для ошибок проверки.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    public record ErrorResponse(Instant timestamp, int status,
+            String error, String message,
+            Map<String, String> fieldErrors) {}
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(
+            MethodArgumentNotValidException ex) {
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(
+            e -> errors.put(e.getField(),
+                            e.getDefaultMessage()));
+
+        return ResponseEntity.badRequest().body(new ErrorResponse(
+            Instant.now(), 400, "Bad Request", "Validation failed",
+            errors));
+    }
+}
+\end{minted}
+\caption{Глобальный обработчик исключений}
+\label{lst:07-14}
+\end{listing}
+
+Точно так же добавляют остальные обработчики: метод, ловящий исключение
+\texttt{EntityNotFoundException}, вернёт код 404, а общий метод для
+\texttt{Exception}~--- всё остальное; Spring выбирает обработчик по наиболее
+точному совпадению типа. Выигрыш очевиден: контроллеры остаются чистыми, без
+блоков \texttt{try/catch}, а формат ошибок для всего API одинаков.
+
+\subsection{Транзакции}
+
+Аннотация \texttt{@Transactional} оборачивает вызов метода в транзакцию базы
+данных: метод завершился нормально~--- изменения фиксируются, вылетело
+непроверяемое исключение~--- откатываются целиком. Ставят её на
+\emph{сервисном слое}. Не на контроллере: там транзакция осталась бы открытой
+на время формирования JSON, удлиняя блокировки в базе. Не на репозитории: его
+методы и так транзакционны по отдельности, а бизнес-операция обычно состоит из
+нескольких вызовов, которые нужно объединить. Из параметров чаще всего нужен
+флаг \texttt{readOnly = true}: он подсказывает Hibernate, что менять ничего не
+будут, и тот отключает проверку изменений; есть ещё \texttt{propagation}
+(поведение при вложенных вызовах), \texttt{isolation} (уровень изоляции) и
+\texttt{rollbackFor}. Листинг~\ref{lst:07-15} показывает и типовое применение,
+и классическую ловушку.
+
+\begin{listing}[H]
+\begin{minted}{java}
+@Service
+public class StudentService {
+
+    // ... поле repository и внедрение через конструктор
+
+    @Transactional(readOnly = true)
+    public List<Student> findAll() {
+        return repository.findAll();
+    }
+
+    // Оба сохранения либо пройдут, либо будут откачены
+    @Transactional
+    public void saveBoth(Student good, Student bad) {
+        repository.save(good);
+        if (bad.getName().isBlank()) {
+            throw new IllegalStateException("Пустое имя");
+        }
+        repository.save(bad);
+    }
+
+    // Ловушка: вызов через this минует прокси,
+    // транзакция НЕ откроется и отката не будет
+    public void outer(Student good, Student bad) {
+        this.saveBoth(good, bad);
+    }
+}
+\end{minted}
+\caption{Транзакции на сервисном слое и ловушка самовызова}
+\label{lst:07-15}
+\end{listing}
+
+Ловушек у прокси ровно три, и все следуют из механизма, разобранного в разделе
+про AOP: вызовы перехватывает объект-двойник. \emph{Первая}:
+\texttt{@Transactional} на приватном методе не работает~--- двойник подменяет
+только публичные методы. \emph{Вторая}: \term{самовызов}
+(\eng{self-invocation}), показанный в листинге,~--- обращение через
+\texttt{this} идёт напрямую в объект, минуя двойника; лечится выносом метода в
+отдельный бин. \emph{Третья}: по умолчанию откат происходит только на
+непроверяемых исключениях, наследниках \texttt{RuntimeException} и
+\texttt{Error}; если метод бросит \texttt{IOException}, транзакция спокойно
+зафиксируется~--- нужен \texttt{@Transactional(rollbackFor = Exception.class)}.
+
+\praktikum{}
+
+Понадобится JDK~21 или новее, Maven (подойдёт обёртка
+\texttt{mvnw} из сгенерированного проекта) и любая среда разработки. Задания
+выполняются подряд: каждое опирается на код предыдущего.
+
+\subsection*{Задание 1. Проект Spring Boot и внедрение зависимостей}
+
+Создайте на сайте \texttt{start.spring.io} проект: сборка Maven, язык Java,
+Spring Boot версии~3.5, группа \texttt{mpt.it}, артефакт \texttt{student},
+пакет
+\texttt{lecture.seven.student}. Зависимости: Spring Web, Spring Data JPA,
+Spring Security, Thymeleaf, H2 Database. Без сети тот же проект набирают
+руками по листингам~\ref{lst:07-3} и~\ref{lst:07-2}. Проверьте, что
+\texttt{mvnw clean compile} собирает проект, а \texttt{mvnw spring-boot:run}
+запускает его: в консоли появится сообщение о старте Tomcat на порту~8080. Ответьте письменно, что находится в секции \texttt{parent} файла
+\texttt{pom.xml} и почему у зависимостей не указаны версии.
+
+Создайте пакет \texttt{greet}: интерфейс \texttt{GreetingService} с методом
+\texttt{String greet(String name)}, реализацию
+\texttt{EnglishGreetingService} (\texttt{@Service}) и контроллер
+\texttt{GreetingController} (\texttt{@RestController}) с путём
+\texttt{/api/greet/\{name\}} и конструкторным внедрением сервиса. Проверьте
+результат в браузере, затем проведите три эксперимента и объясните каждый
+письменно: уберите \texttt{@Service}; верните её и добавьте вторую
+реализацию, тоже с \texttt{@Service}; перепишите контроллер на внедрение
+через поле и объясните, почему \texttt{final} возможен только при внедрении
+через конструктор.
+
+\subsection*{Задание 2. Слои приложения и REST API}
+
+Создайте сущность \texttt{Student} в пакете \texttt{model} по
+листингу~\ref{lst:07-7}. Пропишите настройки базы
+из листинга~\ref{lst:07-4}, добавьте репозиторий по образцу
+листинга~\ref{lst:07-9}, интерфейс \texttt{StudentService} с методами
+\texttt{findAll}, \texttt{findById}, \texttt{save}, \texttt{deleteById} и его
+реализацию с аннотацией \texttt{@Service}, передающую вызовы репозиторию, а
+затем контроллер по образцу листинга~\ref{lst:07-8}, дополнив его методами
+обновления и удаления.
+
+Стартер безопасности уже подключён, и Spring Boot пока закрывает все пути
+сам: пользователь~--- \texttt{user}, пароль печатается в консоли при старте и
+передаётся ключом \texttt{-u}. Проверьте все пять операций утилитой
+\texttt{curl}, записывая тело ответа и код состояния;
+создание выглядит так: \texttt{curl -u user:пароль -X POST
+localhost:8080/api/students -H "Content-Type: application/json" -d
+'\{"name":"Ali","surname":"Hasan"\}'}. Отдельно
+запросите несуществующий идентификатор и объясните, почему приходит 404.
+Добавьте метод поиска с параметром \texttt{@RequestParam String q},
+вызывающий \texttt{findByNameContainingIgnoreCase}, и объясните, откуда
+Spring Data берёт его реализацию. Что на самом деле попало в таблицу, видно
+в веб-консоли H2 по пути \texttt{/h2-console}.
+
+\subsection*{Задание 3. Веб-интерфейс и разграничение доступа}
+
+Добавьте класс \texttt{StudentWebController} (\texttt{@Controller}, путь
+\texttt{/students}) с тремя методами.
+\texttt{String list(Model model)} кладёт в модель список студентов и пустой
+объект \texttt{Student} для формы и возвращает имя шаблона;
+\texttt{String save(@ModelAttribute Student s)} по пути
+\texttt{/students/save} сохраняет объект и возвращает
+\texttt{redirect:/students}; \texttt{String delete(@PathVariable Long id)} по
+пути \texttt{/students/delete/\{id\}} делает то же самое после удаления. Создайте в каталоге \texttt{templates}
+шаблон \texttt{students.html} по образцу листинга~\ref{lst:07-10}: форма
+добавления, таблица со всеми студентами и ссылка удаления в каждой строке.
+Откройте страницу, добавьте трёх студентов, одного удалите и объясните
+письменно, что делает \texttt{th:object}, как \texttt{th:field} связывает поле
+формы с полем объекта и зачем нужна приставка \texttt{redirect:}.
+
+Добавьте в пакет \texttt{config} класс \texttt{SecurityConfig} по образцу
+листингов~\ref{lst:07-11} и~\ref{lst:07-12}: цепочка фильтров, кодировщик
+паролей и два пользователя в памяти с паролем \texttt{password}. Проверьте
+три случая, записав коды ответов: список без входа
+(\texttt{curl localhost:8080/api/students}); удаление первого студента от
+имени \texttt{user} (\texttt{curl -u user:password -X DELETE
+localhost:8080/api/students/1}); то же от имени \texttt{admin}. Объясните,
+почему два последних кода разные: путь с идентификатором подпадает уже под
+правило \texttt{/api/students/**}. Затем добавьте над
+методом удаления аннотацию \texttt{@PreAuthorize("hasRole('ADMIN')")},
+повторите проверку и объясните, чем ограничение через
+\texttt{requestMatchers} отличается от ограничения на методе.
+
+\subsection*{Задание 4. Доведение сервиса до рабочего состояния}
+
+Подключите стартер \texttt{starter-validation}. Создайте пакет \texttt{dto} с
+записями \texttt{StudentRequest} (проверки \texttt{@NotBlank} и
+\texttt{@Size} на обоих полях) и \texttt{StudentResponse} и преобразователем
+\texttt{StudentMapper} по образцу листинга~\ref{lst:07-13}.
+Перепишите REST-контроллер так, чтобы он принимал
+\texttt{@Valid @RequestBody StudentRequest} и возвращал только
+\texttt{StudentResponse}; отправьте с ключом \texttt{-u user:password} запрос
+с пустым именем и убедитесь, что приходит код 400. Добавьте пакет
+\texttt{exception} с классом \texttt{GlobalExceptionHandler} по образцу
+листинга~\ref{lst:07-14} и обработчиком для
+\texttt{jakarta.persistence.EntityNotFoundException}, а метод
+\texttt{findById} исправьте так, чтобы при отсутствии студента он бросал это
+исключение. Повторите оба запроса: теперь в первом случае придёт
+структурированный JSON с полем \texttt{fieldErrors}, во втором~--- код 404 с
+понятным сообщением.
+
+Расставьте в сервисе аннотации \texttt{@Transactional}: с флагом
+\texttt{readOnly = true} на методах чтения и без него на изменяющих. Добавьте
+метод \texttt{saveBoth} из листинга~\ref{lst:07-15}. Снаружи его вызывают
+временным эндпоинтом: метод контроллера с \texttt{@GetMapping("/demo-tx")},
+внутри которого стоит
+\texttt{saveBoth(new Student("Ali", "Hasan"), new Student("", "X"))}.
+Откройте этот адрес и проверьте по списку, что первый студент \emph{не}
+сохранился; уберите аннотацию, повторите вызов и сравните результат. Затем
+воспроизведите ловушку самовызова из того же листинга и объясните, почему
+теперь первый студент сохраняется. По желанию подключите стартер
+\texttt{starter-aop} и добавьте аспект логирования по образцу
+листинга~\ref{lst:07-6}. Ответьте письменно, что произойдёт, если убрать
+\texttt{@Valid} с параметра.
+
+\subsection*{Результаты занятия}
+
+По итогам занятия должен быть готов проект Spring Boot: REST-контроллер с
+полным набором операций над студентами, веб-интерфейс на Thymeleaf,
+безопасность с двумя учётными записями и разграничением прав, объекты
+передачи данных с проверками и преобразователь, глобальный обработчик ошибок,
+транзакции на сервисном слое. Дополнительно~--- письменные ответы на вопросы
+всех четырёх заданий и записанные коды ответов.
+
+\kontrolvoprosy
+
+\begin{enumerate}
+\item Сформулируйте принцип инверсии управления своими словами. Чем он
+      отличается от подхода, в котором объект сам создаёт свои зависимости?
+\item Назовите три способа внедрения зависимостей. Какой предпочтителен и по
+      каким причинам?
+\item Что даёт аннотация \texttt{@SpringBootApplication}, почему главный класс
+      кладут в корневой пакет и что такое starter-модуль?
+\item Перечислите шаги жизненного цикла бина. Почему в конструкторе нельзя
+      рассчитывать на зависимость, внедрённую через сеттер?
+\item Какие области видимости бинов вы знаете, чем опасно изменяемое поле в
+      бине с областью \texttt{singleton} и когда бин нельзя объявить
+      аннотацией \texttt{@Component}?
+\item Объясните понятия «аспект», «точка соединения», «срез» и «совет». Через
+      какой механизм AOP работает в Spring?
+\item Чем \texttt{@RestController} отличается от \texttt{@Controller} и чем
+      \texttt{@PathVariable} отличается от \texttt{@RequestParam}?
+\item Зачем приложение делят на слои «контроллер~--- сервис~--- репозиторий»?
+      Как Spring Data строит запрос по имени метода вида
+      \texttt{findByNameContainingIgnoreCase}?
+\item Что такое \texttt{SecurityFilterChain} и в каком порядке просматриваются
+      правила доступа? Опишите порядок работы аутентификации по токену JWT.
+\item Назовите четыре проблемы, возникающие при возврате сущности прямо из
+      REST-контроллера, и объясните, почему самовызов
+      \texttt{@Transactional}-метода не открывает транзакцию.
+\end{enumerate}
+
+\testzadaniya
+
+\begin{enumerate}
+
+\vopros{Что такое инверсия управления?}
+  {способ оптимизации SQL-запросов}
+  {принцип, при котором управление жизненным циклом объектов передаётся
+   внешнему контейнеру}
+  {шаблон проектирования для организации многопоточности}
+  {изменение порядка вызовов методов в стеке}
+
+\vopros{Почему внедрение через поле считают плохой практикой?}
+  {оно работает медленнее конструкторного}
+  {Spring его больше не поддерживает}
+  {поле нельзя сделать \texttt{final}, зависимости скрыты, тест без
+   контекста требует рефлексии}
+  {оно требует обязательной XML-конфигурации}
+
+\vopros{Что произойдёт, если две реализации одного интерфейса помечены
+  \texttt{@Service} и ничем не различены?}
+  {Spring возьмёт первую попавшуюся}
+  {Spring внедрит список из обеих}
+  {приложение упадёт с \texttt{NoUniqueBeanDefinitionException}}
+  {приложение запустится, но бин не будет создан}
+
+\vopros{Что включает в себя аннотация \texttt{@SpringBootApplication}?}
+  {\texttt{@RestController}, \texttt{@Entity}, \texttt{@Repository}}
+  {\texttt{@Configuration}, \texttt{@EnableAutoConfiguration},
+   \texttt{@ComponentScan}}
+  {\texttt{@Service}, \texttt{@Component}, \texttt{@Bean}}
+  {\texttt{@SpringBootTest} и \texttt{@AutoConfigureMockMvc}}
+
+\vopros{Что описывает понятие «срез» в AOP?}
+  {класс с дополнительной логикой}
+  {код, выполняемый при срабатывании аспекта}
+  {точку остановки в отладчике}
+  {выражение, отбирающее точки соединения для перехвата}
+
+\vopros{Чем \texttt{@RestController} отличается от \texttt{@Controller}?}
+  {он работает только с XML}
+  {он предназначен для статических ресурсов}
+  {это \texttt{@Controller} плюс \texttt{@ResponseBody}: результат
+   сериализуется в тело ответа}
+  {он не поддерживает запросы GET}
+
+\vopros{Как клиент передаёт токен JWT при обращении к защищённому ресурсу?}
+  {в параметре строки запроса}
+  {в заголовке \texttt{Authorization} со словом \texttt{Bearer}}
+  {в файле cookie}
+  {в теле каждого запроса отдельным полем}
+
+\vopros{Чем \texttt{@NotBlank} отличается от \texttt{@NotNull} для строки?}
+  {они полностью равнозначны}
+  {\texttt{@NotBlank} запрещает \texttt{null}, пустую строку и строку из
+   одних пробелов}
+  {\texttt{@NotBlank} применяется только к коллекциям}
+  {\texttt{@NotBlank} проверяет совпадение с регулярным выражением}
+
+\vopros{Где правильно ставить \texttt{@Transactional}?}
+  {на контроллере, чтобы транзакция жила весь запрос}
+  {на репозитории, иначе он не работает}
+  {на главном классе приложения}
+  {на сервисном слое, где заключена бизнес-логика}
+
+\vopros{При каких исключениях транзакция откатывается по умолчанию?}
+  {при любых, включая проверяемые}
+  {только при ошибках базы данных}
+  {никогда: откат вызывают вручную}
+  {только при непроверяемых~--- наследниках \texttt{RuntimeException} и
+   \texttt{Error}}
+
+\end{enumerate}
