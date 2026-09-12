@@ -1,5 +1,0 @@
-flowchart TD
-    APP["Java-приложение"] --> API["JDBC API (java.sql.*)<br/>стандартные интерфейсы"]
-    API --> DM["JDBC Driver Manager<br/>управляет драйверами"]
-    DM --> DRV["JDBC Driver (MySQL, H2, PostgreSQL...)<br/>специфичный для СУБД"]
-    DRV --> DB[("База данных")]

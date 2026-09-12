@@ -1,6 +1,0 @@
-stateDiagram-v2
-    [*] --> Created : загрузка класса + new HelloServlet()
-    Created --> Initialized : init(ServletConfig) — один раз
-    Initialized --> Initialized : service() → doGet/doPost/... — на каждый запрос, параллельно в разных потоках
-    Initialized --> Destroyed : destroy() — один раз при остановке
-    Destroyed --> [*] : объект отдан сборщику мусора

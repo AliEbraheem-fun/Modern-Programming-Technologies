@@ -1,9 +1,0 @@
-flowchart TD
-    USER["Пользователь нажал кнопку"] --> VIEW["VIEW (FXML)"]
-    VIEW -- "onAction=&quot;#handleAdd&quot;" --> CTRL["CONTROLLER"]
-    CTRL --> S1["1. Считал значения полей"]
-    S1 --> S2["2. Проверил корректность"]
-    S2 --> MODEL["MODEL (StudentService)"]
-    MODEL --> S3["3. Создал Student и добавил его в ObservableList"]
-    S3 --> OBS["ObservableList изменился"]
-    OBS --> TV["TableView обновилась САМА"]

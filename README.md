@@ -72,12 +72,18 @@
 ### Балльно-Рейтинговая Система
 
 - [ТРПО24](brs-trpo24.md)
-- [ПИ24в](brs-pi24v.md)
+- [ИД24](brs-id24.md)
+- [ПИ24](brs-pi24.md)
+
+### Архив
+
+- [БРС ПИ24в (архив)](brs-pi24v.md)
 
 ### Презентации
 
-- [Темы презентаций: Ядро Linux](presentations-linux-kernel.md)
-- [Темы презентаций: Паттерны проектирования](presentations-design-patterns.md)
+- [Темы презентаций для 1-го модуля: Ядро Linux](presentations-linux-kernel.md)
+- [Темы презентаций для 2-го модуля: Паттерны проектирования](presentations-design-patterns.md)
+- [Темы презентаций для 3-го модуля: Spring](presentations-spring.md)
 
 ## QR-код для быстрого доступа
 
